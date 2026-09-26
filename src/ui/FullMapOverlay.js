@@ -4,34 +4,34 @@ export class FullMapOverlay {
     this.isOpen = false;
 
     this.landmarks = [
-      { id: 'founders_stark', name: "⚡ Founder's Building (Stark Tower)", x: -70, z: 130, icon: '⚡', color: '#38bdf8', desc: "Futuristic Stark Tower with cantilevered penthouse flight deck & Arc Reactor in BTM Layout!" },
-      { id: 'bnmit', name: '🎓 BNM Institute of Technology (BNMIT)', x: -140, z: 160, icon: '🎓', color: '#9f1239', desc: 'Premier engineering campus with academic quad & 34m campanile tower!' },
-      { id: 'ks_layout', name: '⛰️ Kumaraswamy Layout (KS Layout)', x: -200, z: 180, icon: '⛰️', color: '#c2410c', desc: 'Hilltop layout terrace, panoramic views & Sri Kumaraswamy Temple!' },
-      { id: 'indian_flag', name: '🇮🇳 Monumental Indian National Flag (55m)', x: 0, z: -20, icon: '🇮🇳', color: '#f97316', desc: '55m high Tiranga waving over Amar Jawan Jyoti and Central Plaza!' },
-      { id: 'iaf_hq', name: '🛩️ Indian Air Force (IAF) HQ Command', x: 180, z: -240, icon: '🛩️', color: '#0284c7', desc: 'IAF Training Command HQ with supersonic MiG-21 / Tejas jet & radar dome!' },
-      { id: 'army_hq', name: '🎖️ Indian Army Cantonment & ASC Centre', x: -180, z: 220, icon: '🎖️', color: '#15803d', desc: 'Army Cantonment HQ with battle tank memorial, sentry towers & parade ground!' },
-      { id: 'someshwara_temple', name: '🛕 Sri Someshwara Chola Temple', x: -60, z: -160, icon: '🛕', color: '#d97706', desc: 'Ancient Dravidian temple with 32m 5-tier Rajagopuram, Kalasas & Kalyani tank!' },
-      { id: 'bull_temple', name: '🐂 Dodda Basavana Gudi (Bull Temple)', x: 100, z: 180, icon: '🐂', color: '#78350f', desc: 'Sacred Basavanagudi shrine with monolithic black granite Nandi & Deepasthambha!' },
-      { id: 'iskcon_temple', name: '✨ ISKCON Bangalore Sri Radha Krishna', x: 220, z: -120, icon: '✨', color: '#eab308', desc: 'White marble temple atop Hare Krishna hill with soaring gold Shikhara!' },
-      { id: 'bms_college', name: '🎓 BMS College of Engineering (1946)', x: -120, z: -120, icon: '🎓', color: '#991b1b', desc: 'Historic red-brick engineering quad with 38m clock tower & library!' },
-      { id: 'iisc_campus', name: '🔬 IISc Heritage Science Campus', x: -60, z: 180, icon: '🔬', color: '#475569', desc: 'Classical colonial stone science quad with Tuscan colonnade & research hall!' },
-      { id: 'hsr_bda_complex', name: '🏢 HSR BDA Shopping Complex', x: 60, z: 100, icon: '🏢', color: '#0284c7', desc: '4-story civic commercial complex with Bangalore One, bank & shops!' },
-      { id: 'koramangala_bda_complex', name: '🏢 Koramangala BDA Hub', x: -100, z: 120, icon: '🏢', color: '#d97706', desc: 'Koramangala commercial centre with stores, cafes & civic plaza!' },
-      { id: 'hsr_bda_park', name: '🌳 HSR Sector 2 BDA Public Park', x: 80, z: 40, icon: '🌳', color: '#16a34a', desc: 'BDA park with red-earth walking track, gazebo bandstand & Tabebuia blooms!' },
-      { id: 'koramangala_bda_park', name: '🌳 Koramangala 4th Block BDA Park', x: -140, z: 60, icon: '🌳', color: '#15803d', desc: 'Landscaped public walking gardens with ornamental gazebo & benches!' },
-      { id: 'indiranagar_bda_park', name: '🌳 Indiranagar Defence BDA Park', x: 120, z: -60, icon: '🌳', color: '#059669', desc: 'Serene BDA park with jogging trail, fountain & flowering trees!' },
-      { id: 'silkboard_metro', name: '🚊 Silk Board Metro Station', x: 24, z: 20, icon: '🚊', color: '#10b981', desc: 'Elevated Namma Metro station connecting Outer Ring Road & Hosur Road!' },
-      { id: 'hsr_metro', name: '🚊 HSR Layout Metro Station', x: 24, z: 180, icon: '🚊', color: '#059669', desc: 'Elevated modern station with canopy concourse & 27th Main connectivity!' },
-      { id: 'vidhana', name: '🏛️ Vidhana Soudha', x: -240, z: -40, icon: '🏛️', color: '#f59e0b', desc: 'Karnataka State Legislature with 50m illuminated dome & grand boulevard!' },
-      { id: 'ubcity', name: '🏙️ UB City Tower (120m)', x: -60, z: -100, icon: '🏙️', color: '#eab308', desc: 'Luxury skyscraper, rooftop helipad & boutique amphitheatre piazza!' },
-      { id: 'orion', name: '🛍️ Orion Mall & WTC Bangalore', x: 240, z: 320, icon: '🛍️', color: '#ec4899', desc: 'Contemporary glass shopping mall, 92m WTC tower & lake boardwalk!' },
-      { id: 'lalbagh', name: '🌿 Lalbagh Royal Glass House', x: -140, z: 280, icon: '🌿', color: '#16a34a', desc: 'Crystal Palace conservatory, flower shows & Kempegowda rock tower!' },
-      { id: 'nandihills', name: '⛰️ Nandi Hills Ghats & Viewpoint', x: 440, z: -460, icon: '⛰️', color: '#8b5cf6', desc: 'Drive/walk 75m winding ghat road to panoramic sunrise cliff!' },
-      { id: 'airport', name: '✈️ International Airport & Runway', x: 300, z: -380, icon: '✈️', color: '#2563eb', desc: 'Take off in airplanes down the 280m runway!' },
-      { id: 'tipu_palace', name: "🏰 Tipu Sultan's Summer Palace", x: -160, z: -80, icon: '🏰', color: '#b45309', desc: 'Historic 1791 Indo-Islamic teakwood palace & museum in Kalasipalya!' },
-      { id: 'mysore_palace', name: '👑 Mysore Palace (Amba Vilas)', x: -300, z: 120, icon: '👑', color: '#f59e0b', desc: 'Grand royal palace with 42m golden dome, pink chhatris & 100k night lights!' },
-      { id: 'vvpuram_food', name: '🍲 V.V. Puram Food Street (Thindi Beedi)', x: -40, z: 220, icon: '🍲', color: '#ef4444', desc: 'Bengaluru street food hub: VB Bakery, Hot Butter Dosa, Gulkand & Filter Coffee!' },
-      { id: 'russell_market', name: '🏛️ Russell Market & Commercial St', x: 100, z: -140, icon: '🏛️', color: '#991b1b', desc: 'Colonial 1927 clock tower & bustling Commercial Street shopping alleys!' }
+      { id: 'founders_stark', name: "⚡ Founder's Building (Stark Tower)", x: -70, z: 130, spawnX: -70, spawnZ: 104, icon: '⚡', color: '#38bdf8', desc: "Futuristic Stark Tower with cantilevered penthouse flight deck & Arc Reactor in BTM Layout!" },
+      { id: 'bnmit', name: '🎓 BNM Institute of Technology (BNMIT)', x: -140, z: 160, spawnX: -140, spawnZ: 136, icon: '🎓', color: '#9f1239', desc: 'Premier engineering campus with academic quad & 34m campanile tower!' },
+      { id: 'ks_layout', name: '⛰️ Kumaraswamy Layout (KS Layout)', x: -200, z: 180, spawnX: -185, spawnZ: 175, icon: '⛰️', color: '#c2410c', desc: 'Hilltop layout terrace, panoramic views & Sri Kumaraswamy Temple!' },
+      { id: 'indian_flag', name: '🇮🇳 Monumental Indian National Flag (55m)', x: 0, z: -20, spawnX: 0, spawnZ: 5, icon: '🇮🇳', color: '#f97316', desc: '55m high Tiranga waving over Amar Jawan Jyoti and Central Plaza!' },
+      { id: 'iaf_hq', name: '🛩️ Indian Air Force (IAF) HQ Command', x: 180, z: -240, spawnX: 180, spawnZ: -212, icon: '🛩️', color: '#0284c7', desc: 'IAF Training Command HQ with supersonic MiG-21 / Tejas jet & radar dome!' },
+      { id: 'army_hq', name: '🎖️ Indian Army Cantonment & ASC Centre', x: -180, z: 220, spawnX: -180, spawnZ: 196, icon: '🎖️', color: '#15803d', desc: 'Army Cantonment HQ with battle tank memorial, sentry towers & parade ground!' },
+      { id: 'someshwara_temple', name: '🛕 Sri Someshwara Chola Temple', x: -60, z: -160, spawnX: -60, spawnZ: -136, icon: '🛕', color: '#d97706', desc: 'Ancient Dravidian temple with 32m 5-tier Rajagopuram, Kalasas & Kalyani tank!' },
+      { id: 'bull_temple', name: '🐂 Dodda Basavana Gudi (Bull Temple)', x: 100, z: 180, spawnX: 100, spawnZ: 156, icon: '🐂', color: '#78350f', desc: 'Sacred Basavanagudi shrine with monolithic black granite Nandi & Deepasthambha!' },
+      { id: 'iskcon_temple', name: '✨ ISKCON Bangalore Sri Radha Krishna', x: 220, z: -120, spawnX: 220, spawnZ: -95, icon: '✨', color: '#eab308', desc: 'White marble temple atop Hare Krishna hill with soaring gold Shikhara!' },
+      { id: 'bms_college', name: '🎓 BMS College of Engineering (1946)', x: -120, z: -120, spawnX: -120, spawnZ: -96, icon: '🎓', color: '#991b1b', desc: 'Historic red-brick engineering quad with 38m clock tower & library!' },
+      { id: 'iisc_campus', name: '🔬 IISc Heritage Science Campus', x: -60, z: 180, spawnX: -60, spawnZ: 152, icon: '🔬', color: '#475569', desc: 'Classical colonial stone science quad with Tuscan colonnade & research hall!' },
+      { id: 'hsr_bda_complex', name: '🏢 HSR BDA Shopping Complex', x: 60, z: 100, spawnX: 60, spawnZ: 78, icon: '🏢', color: '#0284c7', desc: '4-story civic commercial complex with Bangalore One, bank & shops!' },
+      { id: 'koramangala_bda_complex', name: '🏢 Koramangala BDA Hub', x: -100, z: 120, spawnX: -100, spawnZ: 96, icon: '🏢', color: '#d97706', desc: 'Koramangala commercial centre with stores, cafes & civic plaza!' },
+      { id: 'hsr_bda_park', name: '🌳 HSR Sector 2 BDA Public Park', x: 80, z: 40, spawnX: 80, spawnZ: 20, icon: '🌳', color: '#16a34a', desc: 'BDA park with red-earth walking track, gazebo bandstand & Tabebuia blooms!' },
+      { id: 'koramangala_bda_park', name: '🌳 Koramangala 4th Block BDA Park', x: -140, z: 60, spawnX: -140, spawnZ: 38, icon: '🌳', color: '#15803d', desc: 'Landscaped public walking gardens with ornamental gazebo & benches!' },
+      { id: 'indiranagar_bda_park', name: '🌳 Indiranagar Defence BDA Park', x: 120, z: -60, spawnX: 120, spawnZ: -38, icon: '🌳', color: '#059669', desc: 'Serene BDA park with jogging trail, fountain & flowering trees!' },
+      { id: 'silkboard_metro', name: '🚊 Silk Board Metro Station', x: 24, z: 20, spawnX: 34, spawnZ: 20, icon: '🚊', color: '#10b981', desc: 'Elevated Namma Metro station connecting Outer Ring Road & Hosur Road!' },
+      { id: 'hsr_metro', name: '🚊 HSR Layout Metro Station', x: 24, z: 180, spawnX: 34, spawnZ: 180, icon: '🚊', color: '#059669', desc: 'Elevated modern station with canopy concourse & 27th Main connectivity!' },
+      { id: 'vidhana', name: '🏛️ Vidhana Soudha', x: -240, z: -40, spawnX: -205, spawnZ: -26, icon: '🏛️', color: '#f59e0b', desc: 'Karnataka State Legislature with 50m illuminated dome & grand boulevard!' },
+      { id: 'ubcity', name: '🏙️ UB City Tower (120m)', x: -60, z: -100, spawnX: -60, spawnZ: -72, icon: '🏙️', color: '#eab308', desc: 'Luxury skyscraper, rooftop helipad & boutique amphitheatre piazza!' },
+      { id: 'orion', name: '🛍️ Orion Mall & WTC Bangalore', x: 240, z: 320, spawnX: 220, spawnZ: 295, icon: '🛍️', color: '#ec4899', desc: 'Contemporary glass shopping mall, 92m WTC tower & lake boardwalk!' },
+      { id: 'lalbagh', name: '🌿 Lalbagh Royal Glass House', x: -140, z: 280, spawnX: -140, spawnZ: 252, icon: '🌿', color: '#16a34a', desc: 'Crystal Palace conservatory, flower shows & Kempegowda rock tower!' },
+      { id: 'nandihills', name: '⛰️ Nandi Hills Ghats & Viewpoint', x: 440, z: -460, spawnX: 440, spawnZ: -450, icon: '⛰️', color: '#8b5cf6', desc: 'Drive/walk 75m winding ghat road to panoramic sunrise cliff!' },
+      { id: 'airport', name: '✈️ International Airport & Runway', x: 300, z: -380, spawnX: 220, spawnZ: -380, icon: '✈️', color: '#2563eb', desc: 'Take off in airplanes down the 280m runway!' },
+      { id: 'tipu_palace', name: "🏰 Tipu Sultan's Summer Palace", x: -160, z: -80, spawnX: -160, spawnZ: -56, icon: '🏰', color: '#b45309', desc: 'Historic 1791 Indo-Islamic teakwood palace & museum in Kalasipalya!' },
+      { id: 'mysore_palace', name: '👑 Mysore Palace (Amba Vilas)', x: -300, z: 120, spawnX: -255, spawnZ: 120, icon: '👑', color: '#f59e0b', desc: 'Grand royal palace with 42m golden dome, pink chhatris & 100k night lights!' },
+      { id: 'vvpuram_food', name: '🍲 V.V. Puram Food Street (Thindi Beedi)', x: -40, z: 220, spawnX: -40, spawnZ: 196, icon: '🍲', color: '#ef4444', desc: 'Bengaluru street food hub: VB Bakery, Hot Butter Dosa, Gulkand & Filter Coffee!' },
+      { id: 'russell_market', name: '🏛️ Russell Market & Commercial St', x: 100, z: -140, spawnX: 100, spawnZ: -116, icon: '🏛️', color: '#991b1b', desc: 'Colonial 1927 clock tower & bustling Commercial Street shopping alleys!' }
     ];
 
     // Default target: Vidhana Soudha!
@@ -133,7 +133,9 @@ export class FullMapOverlay {
     if (spawnBtn) {
       spawnBtn.addEventListener('click', () => {
         if (this.selectedTarget && this.game) {
-          this.executeSpawn(this.selectedTarget.x, this.selectedTarget.z);
+          const sx = this.selectedTarget.spawnX !== undefined ? this.selectedTarget.spawnX : this.selectedTarget.x;
+          const sz = this.selectedTarget.spawnZ !== undefined ? this.selectedTarget.spawnZ : this.selectedTarget.z;
+          this.executeSpawn(sx, sz);
         }
       });
     }
@@ -181,8 +183,8 @@ export class FullMapOverlay {
         }
       }
 
-      const spawnX = nearestLandmark ? nearestLandmark.x : worldX;
-      const spawnZ = nearestLandmark ? nearestLandmark.z : worldZ;
+      const spawnX = nearestLandmark ? (nearestLandmark.spawnX !== undefined ? nearestLandmark.spawnX : nearestLandmark.x) : worldX;
+      const spawnZ = nearestLandmark ? (nearestLandmark.spawnZ !== undefined ? nearestLandmark.spawnZ : nearestLandmark.z) : worldZ;
 
       const now = performance.now();
       const timeSinceLast = now - this.lastTapTime;

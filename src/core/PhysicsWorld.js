@@ -4,8 +4,9 @@ export class PhysicsWorld {
   constructor() {
     this.world = new CANNON.World();
     this.world.gravity.set(0, -20, 0);
-    this.world.broadphase = new CANNON.NaiveBroadphase();
-    this.world.solver.iterations = 10;
+    this.world.broadphase = new CANNON.SAPBroadphase(this.world);
+    this.world.allowSleep = true;
+    this.world.solver.iterations = 7;
     this.world.defaultContactMaterial.friction = 0.35;
     this.world.defaultContactMaterial.restitution = 0.05;
 
@@ -18,6 +19,7 @@ export class PhysicsWorld {
     const groundShape = new CANNON.Plane();
     const groundBody = new CANNON.Body({
       mass: 0,
+      type: CANNON.Body.STATIC,
       shape: groundShape
     });
     groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
@@ -229,7 +231,7 @@ export class PhysicsWorld {
     return { x: finalX, z: finalZ, constrained, normalX, normalZ };
   }
 
-  getSurfaceHeight(x, z, currentY = 0) {
+  getSurfaceHeight(x, z, currentY = null, forSpawning = false) {
     let surfaceH = 0;
 
     // 1. Check flyover ramps first — smooth climbing from ground to elevated deck
@@ -241,7 +243,7 @@ export class PhysicsWorld {
           if (x >= minX - 1.5 && x <= maxX + 1.5) {
             const t = Math.max(0, Math.min(1, (x - ramp.startCoord) / (ramp.endCoord - ramp.startCoord)));
             const rampH = ramp.startHeight + (ramp.endHeight - ramp.startHeight) * t;
-            if (Math.abs(currentY - rampH) < 8.0 || currentY <= rampH + 2.5) {
+            if (forSpawning || currentY === null || Math.abs(currentY - rampH) < 8.0 || currentY <= rampH + 2.5) {
               if (rampH > surfaceH) surfaceH = rampH;
             }
           }
@@ -253,7 +255,7 @@ export class PhysicsWorld {
           if (z >= minZ - 1.5 && z <= maxZ + 1.5) {
             const t = Math.max(0, Math.min(1, (z - ramp.startCoord) / (ramp.endCoord - ramp.startCoord)));
             const rampH = ramp.startHeight + (ramp.endHeight - ramp.startHeight) * t;
-            if (Math.abs(currentY - rampH) < 8.0 || currentY <= rampH + 2.5) {
+            if (forSpawning || currentY === null || Math.abs(currentY - rampH) < 8.0 || currentY <= rampH + 2.5) {
               if (rampH > surfaceH) surfaceH = rampH;
             }
           }
@@ -261,10 +263,10 @@ export class PhysicsWorld {
       }
     }
 
-    // 2. Check elevated flyover decks
+    // 2. Check elevated flyover decks & summit terraces
     for (const deck of this.flyovers) {
       if (x >= deck.minX - 1.0 && x <= deck.maxX + 1.0 && z >= deck.minZ - 1.0 && z <= deck.maxZ + 1.0) {
-        if (currentY >= deck.height - 3.0 || Math.abs(currentY - deck.height) < 6.5) {
+        if (forSpawning || currentY === null || currentY >= deck.height - 3.0 || Math.abs(currentY - deck.height) < 6.5) {
           if (deck.height > surfaceH) {
             surfaceH = deck.height;
           }

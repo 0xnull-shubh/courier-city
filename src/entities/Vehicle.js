@@ -279,10 +279,9 @@ export class Vehicle {
         this.currentSpeed *= Math.max(0, 1 - 3 * dt);
       }
 
-      // Steering
-      // Steering direction aligned with input: positive turnInput (right) → positive steer
-      const targetSteer = turnInput * this.maxSteerAngle;
-      this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, dt * 10);
+      // Steering: sharp, responsive arcade steering
+      const targetSteer = -turnInput * this.maxSteerAngle;
+      this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, dt * 18);
 
       // Always allow steering if the car has any throttle/brake input or motion!
       const isTryingToMove = (input.isDown('KeyW') || input.isDown('ArrowUp') || input.isDown('KeyS') || input.isDown('ArrowDown'));

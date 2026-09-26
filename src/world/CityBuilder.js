@@ -1445,7 +1445,7 @@ export class CityBuilder {
     group.add(flameLight);
 
     // Ground High-Powered Floodlight illuminating the Tiranga
-    const flagFlood = new THREE.PointLight(0xffffff, 3.0, 75);
+    const flagFlood = new THREE.PointLight(0xffffff, 3.0, 28);
     flagFlood.position.set(0, 4.0, 0);
     group.add(flagFlood);
 
@@ -5030,12 +5030,12 @@ export class CityBuilder {
     group.add(mast);
 
     // Blinking red aviation warning light on spire
-    const spireLight = new THREE.PointLight(0xff0000, 3.0, 40);
+    const spireLight = new THREE.PointLight(0xff0000, 3.0, 22);
     spireLight.position.set(2, 118, -2);
     group.add(spireLight);
 
     // Glowing Arc Reactor Core Beacon at top
-    const reactorLight = new THREE.PointLight(0x06b6d4, 4.5, 45);
+    const reactorLight = new THREE.PointLight(0x06b6d4, 4.5, 22);
     reactorLight.position.set(0, 91, 14);
     group.add(reactorLight);
 

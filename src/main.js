@@ -57,18 +57,18 @@ class Game {
       stencil: false
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    // Cap pixelRatio at 1.5 for Retina displays to avoid 4x fragment shader fillrate bottleneck
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    // Cap pixelRatio at 1.25 for Retina/HiDPI displays to eliminate fillrate stall
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.1;
   }
 
   initScene() {
     this.scene = new THREE.Scene();
-    // Bruno Simon low-FOV diorama camera lens (38 deg base)
-    this.camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 1600);
+    // Bruno Simon low-FOV diorama camera lens (38 deg base) with tight 450m cull distance
+    this.camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 450);
     this.camera.position.set(0, 8.0, 16.0);
   }
 
@@ -83,6 +83,8 @@ class Game {
     this.metroSystem = new MetroSystem(this.scene, this.physicsWorld, this.audioManager);
     this.crowdSystem = new CrowdSystem(this.scene);
     this.skidSystem = new SkidMarkSystem(this.scene);
+    this.skyCreatures = new SkyCreatures(this.scene);
+    this.animalSystem = new AnimalWanderSystem(this.scene, this.physicsWorld);
     this.interactiveProps = new InteractiveProps(this.scene, this.physicsWorld, this.audioManager);
     this.minimap = new Minimap('radar-canvas', this);
     this.hud = new HUD();
@@ -467,51 +469,77 @@ class Game {
   }
 
   spawnPlayerAt(worldX, worldZ) {
-    // 1. Calculate true surface elevation (supports ground terrain and elevated highway flyovers)
+    // 1. Calculate true surface elevation (supports ground terrain, summits, and elevated highway flyovers)
     const surfaceY = (this.physicsWorld && typeof this.physicsWorld.getSurfaceHeight === 'function')
-      ? this.physicsWorld.getSurfaceHeight(worldX, worldZ)
+      ? this.physicsWorld.getSurfaceHeight(worldX, worldZ, null, true)
       : 0;
+
+    let finalX = worldX;
+    let finalZ = worldZ;
+
+    // Safety check against obstacles to never spawn inside a building or wall
+    if (this.physicsWorld && this.physicsWorld.obstacles) {
+      for (const b of this.physicsWorld.obstacles) {
+        if (b.isRamp) continue;
+        const pad = 2.5;
+        if (finalX >= b.x - b.hx - pad && finalX <= b.x + b.hx + pad &&
+            finalZ >= b.z - b.hz - pad && finalZ <= b.z + b.hz + pad) {
+          const distLeft = Math.abs(finalX - (b.x - b.hx));
+          const distRight = Math.abs(finalX - (b.x + b.hx));
+          const distBack = Math.abs(finalZ - (b.z - b.hz));
+          const distFront = Math.abs(finalZ - (b.z + b.hz));
+          const minDist = Math.min(distLeft, distRight, distBack, distFront);
+          if (minDist === distFront) finalZ = b.z + b.hz + pad + 1.2;
+          else if (minDist === distBack) finalZ = b.z - b.hz - pad - 1.2;
+          else if (minDist === distRight) finalX = b.x + b.hx + pad + 1.2;
+          else finalX = b.x - b.hx - pad - 1.2;
+        }
+      }
+    }
 
     const safeLandingY = Math.max(0, surfaceY) + 1.2;
 
     if (this.player.isDriving && this.activeVehicle) {
       // Teleport the vehicle and player together
       const veh = this.activeVehicle;
-      veh.position.set(worldX, safeLandingY, worldZ);
+      veh.position.set(finalX, safeLandingY, finalZ);
       veh.speed = 0;
+      veh.currentSpeed = 0;
+      veh.speedKmh = 0;
       if (veh.velocity) veh.velocity.set(0, 0, 0);
       if (veh.angularVelocity !== undefined) veh.angularVelocity = 0;
       if (veh.steerAngle !== undefined) veh.steerAngle = 0;
       if (veh.pitch !== undefined) veh.pitch = 0;
       if (veh.roll !== undefined) veh.roll = 0;
       if (veh.verticalVelocity !== undefined) veh.verticalVelocity = 0;
+      if (veh.altitude !== undefined) veh.altitude = safeLandingY;
 
       if (veh.body) {
-        veh.body.position.set(worldX, safeLandingY, worldZ);
+        veh.body.position.set(finalX, safeLandingY, finalZ);
         veh.body.velocity.set(0, 0, 0);
         veh.body.angularVelocity.set(0, 0, 0);
       }
 
       if (veh.mesh) {
-        veh.mesh.position.set(worldX, safeLandingY, worldZ);
+        veh.mesh.position.set(finalX, safeLandingY, finalZ);
       }
 
-      this.player.position.set(worldX, safeLandingY, worldZ);
-      if (this.player.mesh) {
-        this.player.mesh.position.set(worldX, safeLandingY, worldZ);
+      this.player.position.set(finalX, safeLandingY, finalZ);
+      if (this.player.group) {
+        this.player.group.position.set(finalX, safeLandingY, finalZ);
       }
 
       const vehName = veh.carName || (veh.isBrunoToyCar ? 'Bruno Toy Roadster' : (veh.isSportsCar ? 'Supercar' : 'Vehicle'));
-      this.hud.showToast(`⚡ Landed ${vehName} at (${Math.round(worldX)}, ${Math.round(worldZ)})!`);
+      this.hud.showToast(`⚡ Landed ${vehName} at (${Math.round(finalX)}, ${Math.round(finalZ)})!`);
     } else {
       // Teleport character on foot
-      this.player.position.set(worldX, safeLandingY, worldZ);
+      this.player.position.set(finalX, safeLandingY, finalZ);
       this.player.velocity.set(0, 0, 0);
       this.player.verticalVelocity = 0;
-      if (this.player.mesh) {
-        this.player.mesh.position.set(worldX, safeLandingY, worldZ);
+      if (this.player.group) {
+        this.player.group.position.set(finalX, safeLandingY, finalZ);
       }
-      this.hud.showToast(`⚡ Landed character at (${Math.round(worldX)}, ${Math.round(worldZ)})!`);
+      this.hud.showToast(`⚡ Landed character at (${Math.round(finalX)}, ${Math.round(finalZ)})!`);
     }
 
     // 2. Instantly reset camera tracking to destination coordinates
@@ -528,7 +556,12 @@ class Game {
       }
     }
 
-    // 3. Audio feedback
+    // 3. Update environment sun light position immediately to prevent shadow pop
+    if (this.environment) {
+      this.environment.update(0.016, targetPos);
+    }
+
+    // 4. Audio feedback
     if (this.audioManager && typeof this.audioManager.playDoor === 'function') {
       this.audioManager.playDoor();
     }
@@ -892,6 +925,10 @@ class Game {
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  new Game();
-});
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', () => {
+    window.game = new Game();
+  });
+} else {
+  window.game = new Game();
+}

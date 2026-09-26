@@ -267,9 +267,9 @@ export class MonsterTruck {
         this.currentSpeed *= Math.max(0, 1 - 3 * dt);
       }
 
-      // Steering
-      const targetSteer = -turnInput * this.maxSteerAngle;
-      this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, dt * 10);
+      // Steering: high-torque 4x4 steering
+      const targetSteer = turnInput * this.maxSteerAngle;
+      this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, dt * 18);
 
       const effectiveSpeed = Math.max(Math.abs(this.currentSpeed), (throttle !== 0) ? 3.0 : 0);
       if (effectiveSpeed > 0.1) {

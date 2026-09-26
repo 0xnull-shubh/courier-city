@@ -378,9 +378,9 @@ export class SportsCar {
         this.currentSpeed *= Math.max(0, 1 - 2.5 * dt);
       }
 
-      // Steering
-      const targetSteer = -turnInput * this.maxSteerAngle;
-      this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, dt * 14);
+      // Steering: razor-sharp supercar handling
+      const targetSteer = turnInput * this.maxSteerAngle;
+      this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, dt * 22);
 
       const effectiveSpeed = Math.max(Math.abs(this.currentSpeed), (throttle !== 0) ? 3.0 : 0);
       if (effectiveSpeed > 0.1) {
