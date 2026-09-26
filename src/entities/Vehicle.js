@@ -35,8 +35,17 @@ export class Vehicle {
     this.headlightsOn = false;
 
     this.radius = 1.35;
+    this.skidSystem = null;
+
+    // Suspension spring dynamics (Bruno Simon toy-car chassis tilt)
+    this.targetRoll = 0;
+    this.targetPitch = 0;
 
     this.initMesh();
+  }
+
+  setSkidSystem(skidSystem) {
+    this.skidSystem = skidSystem;
   }
 
   initMesh() {
@@ -399,6 +408,42 @@ export class Vehicle {
       if (input.isDown('KeyH')) {
         this.audioManager.playHonk();
       }
+
+      // Bruno Simon Toy-Car Suspension Dynamics (Roll & Pitch tilt)
+      const speedRatio = Math.min(1.0, this.speed / 16.0);
+      const targetRoll = -this.steerAngle * speedRatio * 0.22;
+      this.roll += (targetRoll - this.roll) * Math.min(1, dt * 10.0);
+
+      // Pitch: squat on acceleration, dive on braking
+      let targetSuspensionPitch = 0;
+      if (fwdInput > 0 && this.speed < topSpeed) {
+        targetSuspensionPitch = 0.045 * (boost ? 1.6 : 1.0);
+      } else if (fwdInput < 0 || handbrake) {
+        targetSuspensionPitch = -0.075;
+      }
+      this.pitch += (targetSuspensionPitch - this.pitch) * Math.min(1, dt * 12.0);
+
+      // Tire skidmarks & smoke on drift or hard braking
+      if (this.skidSystem) {
+        const isHardCornering = Math.abs(this.steerAngle) > 0.22 && this.speed > 8.0;
+        const isDrifting = handbrake && this.speed > 3.0;
+        if (isDrifting || isHardCornering) {
+          const rearLeftWorld = new THREE.Vector3(-1.08, 0.05, -1.25)
+            .applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw)
+            .add(this.position);
+          const rearRightWorld = new THREE.Vector3(1.08, 0.05, -1.25)
+            .applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw)
+            .add(this.position);
+          const alpha = isDrifting ? 0.9 : 0.6;
+          this.skidSystem.addSkid(rearLeftWorld, rearRightWorld, alpha);
+          this.skidSystem.emitSmoke(rearLeftWorld);
+        } else {
+          this.skidSystem.resetCurrentTrack();
+        }
+      }
+    } else {
+      // Non-controlled vehicles naturally damp roll
+      this.roll *= Math.max(0, 1 - 8 * dt);
     }
 
     this.speed = Math.abs(this.currentSpeed);

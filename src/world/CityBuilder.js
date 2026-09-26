@@ -31,34 +31,35 @@ export class CityBuilder {
 
   initMaterials() {
     this.materials = {
-      grass: new THREE.MeshStandardMaterial({ color: 0x7fa964, roughness: 0.9 }),
-      sand: new THREE.MeshStandardMaterial({ color: 0xe9d8a6, roughness: 0.95 }),
+      // Bruno Simon signature diorama studio floor (warm matte cream/sand)
+      grass: new THREE.MeshStandardMaterial({ color: 0xe5dacf, roughness: 0.92, metalness: 0.0 }),
+      parkGreen: new THREE.MeshStandardMaterial({ color: 0x78a072, roughness: 0.9, metalness: 0.0 }),
+      sand: new THREE.MeshStandardMaterial({ color: 0xe3d3be, roughness: 0.95, metalness: 0.0 }),
       water: new THREE.MeshStandardMaterial({
-        color: 0x0a9396,
-        roughness: 0.15,
-        metalness: 0.25,
+        color: 0x5294a6,
+        roughness: 0.35,
+        metalness: 0.1,
         transparent: true,
-        opacity: 0.88
+        opacity: 0.92
       }),
-      road: new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.85, metalness: 0.1 }),
-      roadMarking: new THREE.MeshBasicMaterial({ color: 0xffd166 }),
-      roadWhite: new THREE.MeshBasicMaterial({ color: 0xffffff }),
-      sidewalk: new THREE.MeshStandardMaterial({ map: this.textures.cobble, roughness: 0.8 }),
+      road: new THREE.MeshStandardMaterial({ color: 0x38353a, roughness: 0.88, metalness: 0.05 }),
+      roadMarking: new THREE.MeshBasicMaterial({ color: 0xf5efe6 }),
+      roadWhite: new THREE.MeshBasicMaterial({ color: 0xfbf9f5 }),
+      sidewalk: new THREE.MeshStandardMaterial({ color: 0xd8cebf, roughness: 0.85, metalness: 0.02 }),
       tajMarble: new THREE.MeshStandardMaterial({
-        map: this.textures.marble,
-        color: 0xffffff,
-        roughness: 0.25,
-        metalness: 0.08
+        color: 0xf7f5f0,
+        roughness: 0.35,
+        metalness: 0.04
       }),
-      goldTrim: new THREE.MeshStandardMaterial({ color: 0xf4a261, roughness: 0.3, metalness: 0.8 }),
-      redSandstone: new THREE.MeshStandardMaterial({ map: this.textures.redSandstone, roughness: 0.75 }),
-      buffSandstone: new THREE.MeshStandardMaterial({ map: this.textures.buffSandstone, roughness: 0.75 }),
-      eiffelIron: new THREE.MeshStandardMaterial({ color: 0x635d55, roughness: 0.65, metalness: 0.7 }),
-      copperDome: new THREE.MeshStandardMaterial({ map: this.textures.copper, roughness: 0.5, metalness: 0.35 }),
-      statueCopper: new THREE.MeshStandardMaterial({ map: this.textures.copper, roughness: 0.45, metalness: 0.35 }),
-      rock: new THREE.MeshStandardMaterial({ map: this.textures.rock, roughness: 0.95 }),
-      snow: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.1 }),
-      bridgeMetal: new THREE.MeshStandardMaterial({ color: 0xe63946, roughness: 0.4, metalness: 0.5 })
+      goldTrim: new THREE.MeshStandardMaterial({ color: 0xe5ad52, roughness: 0.45, metalness: 0.4 }),
+      redSandstone: new THREE.MeshStandardMaterial({ color: 0xd46853, roughness: 0.85, metalness: 0.02 }),
+      buffSandstone: new THREE.MeshStandardMaterial({ color: 0xdfba8c, roughness: 0.85, metalness: 0.02 }),
+      eiffelIron: new THREE.MeshStandardMaterial({ color: 0x58575c, roughness: 0.7, metalness: 0.3 }),
+      copperDome: new THREE.MeshStandardMaterial({ color: 0x6ca391, roughness: 0.6, metalness: 0.15 }),
+      statueCopper: new THREE.MeshStandardMaterial({ color: 0x6ca391, roughness: 0.55, metalness: 0.15 }),
+      rock: new THREE.MeshStandardMaterial({ color: 0x9c9389, roughness: 0.92, metalness: 0.02 }),
+      snow: new THREE.MeshStandardMaterial({ color: 0xfaf8f5, roughness: 0.5, metalness: 0.02 }),
+      bridgeMetal: new THREE.MeshStandardMaterial({ color: 0xd9534f, roughness: 0.6, metalness: 0.2 })
     };
   }
 
@@ -109,8 +110,8 @@ export class CityBuilder {
   }
 
   createLandscapeAndRiver() {
-    // Expansive 1200m x 1200m Terrain
-    const groundGeo = new THREE.PlaneGeometry(1200, 1200, 32, 32);
+    // Expansive 2400m x 2400m seamless diorama studio ground plane
+    const groundGeo = new THREE.PlaneGeometry(2400, 2400, 1, 1);
     const ground = new THREE.Mesh(groundGeo, this.materials.grass);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;

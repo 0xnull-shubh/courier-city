@@ -14,51 +14,63 @@ export class SkyboxEnvironment {
   }
 
   initLights() {
-    this.hemiLight = new THREE.HemisphereLight(0xfffaed, 0x81ecec, 0.95);
+    // Bruno Simon warm studio lighting:
+    // 1. Warm hemisphere light filling shadows with rich terracotta/sand bounce
+    this.hemiLight = new THREE.HemisphereLight(0xfffaf0, 0xd4c7b5, 1.15);
     this.scene.add(this.hemiLight);
 
-    this.sunLight = new THREE.DirectionalLight(0xfff3d6, 1.5);
-    this.sunLight.position.set(40, 60, 35);
+    // 2. Crisp, warm directional sunlight casting soft PCF shadows
+    this.sunLight = new THREE.DirectionalLight(0xfff6e6, 1.85);
+    this.sunLight.position.set(45, 65, 38);
     this.sunLight.castShadow = true;
-    this.sunLight.shadow.mapSize.width = 1024;
-    this.sunLight.shadow.mapSize.height = 1024;
+    this.sunLight.shadow.mapSize.width = 2048;
+    this.sunLight.shadow.mapSize.height = 2048;
     this.sunLight.shadow.camera.near = 1;
-    this.sunLight.shadow.camera.far = 240;
+    this.sunLight.shadow.camera.far = 160;
 
-    const shadowDist = 70;
+    // Follow-sun shadow bounding box (tight 75m box for razor-sharp shadows at scale)
+    const shadowDist = 38;
     this.sunLight.shadow.camera.left = -shadowDist;
     this.sunLight.shadow.camera.right = shadowDist;
     this.sunLight.shadow.camera.top = shadowDist;
     this.sunLight.shadow.camera.bottom = -shadowDist;
-    this.sunLight.shadow.bias = -0.0005;
+    this.sunLight.shadow.bias = -0.0004;
+    this.sunLight.shadow.radius = 2.0;
 
     this.scene.add(this.sunLight);
+    this.scene.add(this.sunLight.target);
   }
 
   initAtmosphere() {
-    // Crisp, clear sky with high view distance
-    this.daySkyColor = new THREE.Color(0x7ec8e3);
-    this.nightSkyColor = new THREE.Color(0x0f172a);
+    // Bruno Simon signature diorama palette:
+    // Warm matte studio sand/cream that seamlessly dissolves the horizon
+    this.daySkyColor = new THREE.Color(0xe5dacf);
+    this.nightSkyColor = new THREE.Color(0x1a1c23);
 
     this.scene.background = this.daySkyColor.clone();
-    // Gentle distant fog so monuments 300m away are clearly visible
-    this.scene.fog = new THREE.FogExp2(0x7ec8e3, 0.0018);
+
+    // Linear fog matching the studio floor color exactly
+    // Creates the clean infinite studio look while keeping nearby city blocks crisp
+    this.scene.fog = new THREE.Fog(0xe5dacf, 130, 360);
   }
 
   initClouds() {
-    const cloudMat = new THREE.MeshToonMaterial({
-      color: 0xffffff,
+    // Stylized matte clay clouds
+    const cloudMat = new THREE.MeshStandardMaterial({
+      color: 0xfbf8f3,
+      roughness: 0.95,
+      metalness: 0.0,
       transparent: true,
-      opacity: 0.9
+      opacity: 0.92
     });
 
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 22; i++) {
       const cloud = this.createPuffyCloud(cloudMat);
-      const angle = (i / 20) * Math.PI * 2 + Math.random();
-      const radius = 60 + Math.random() * 90;
+      const angle = (i / 22) * Math.PI * 2 + Math.random();
+      const radius = 70 + Math.random() * 110;
       cloud.position.set(
         Math.cos(angle) * radius,
-        38 + Math.random() * 18,
+        42 + Math.random() * 18,
         Math.sin(angle) * radius
       );
       this.clouds.push(cloud);
@@ -91,30 +103,33 @@ export class SkyboxEnvironment {
     this.scene.fog.color.copy(targetSky);
 
     if (this.isNight) {
-      this.sunLight.intensity = 0.25;
-      this.sunLight.color.setHex(0x5c729c);
-      this.hemiLight.intensity = 0.4;
-      this.hemiLight.color.setHex(0x2f3640);
+      this.sunLight.intensity = 0.35;
+      this.sunLight.color.setHex(0x6b7fa3);
+      this.hemiLight.intensity = 0.5;
+      this.hemiLight.color.setHex(0x282c37);
     } else {
-      this.sunLight.intensity = 1.5;
-      this.sunLight.color.setHex(0xfff3d6);
-      this.hemiLight.intensity = 0.95;
-      this.hemiLight.color.setHex(0xfffaed);
+      this.sunLight.intensity = 1.85;
+      this.sunLight.color.setHex(0xfff6e6);
+      this.hemiLight.intensity = 1.15;
+      this.hemiLight.color.setHex(0xfffaf0);
     }
 
     return this.isNight;
   }
 
   update(dt, targetPos) {
-    this.sunLight.position.x = targetPos.x + 40;
-    this.sunLight.position.z = targetPos.z + 35;
-    this.sunLight.target.position.copy(targetPos);
+    if (!targetPos) return;
+
+    // Follow-sun: Position the directional light and shadow frustum directly over the player
+    // This guarantees 2048x2048 shadow density right where the player is anywhere across Bangalore!
+    this.sunLight.position.set(targetPos.x + 45, targetPos.y + 65, targetPos.z + 38);
+    this.sunLight.target.position.set(targetPos.x, targetPos.y, targetPos.z);
     this.sunLight.target.updateMatrixWorld();
 
     this.clouds.forEach(cloud => {
       cloud.position.x += dt * 1.4;
-      if (cloud.position.x > 180) {
-        cloud.position.x = -180;
+      if (cloud.position.x > 220) {
+        cloud.position.x = -220;
       }
     });
   }
