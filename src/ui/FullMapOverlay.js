@@ -7,7 +7,7 @@ export class FullMapOverlay {
       { id: 'founders_stark', name: "⚡ Founder's Building (Stark Tower)", x: -70, z: 130, spawnX: -70, spawnZ: 104, icon: '⚡', color: '#38bdf8', desc: "Futuristic Stark Tower with cantilevered penthouse flight deck & Arc Reactor in BTM Layout!" },
       { id: 'bnmit', name: '🎓 BNM Institute of Technology (BNMIT)', x: -140, z: 160, spawnX: -140, spawnZ: 136, icon: '🎓', color: '#9f1239', desc: 'Premier engineering campus with academic quad & 34m campanile tower!' },
       { id: 'ks_layout', name: '⛰️ Kumaraswamy Layout (KS Layout)', x: -200, z: 180, spawnX: -185, spawnZ: 175, icon: '⛰️', color: '#c2410c', desc: 'Hilltop layout terrace, panoramic views & Sri Kumaraswamy Temple!' },
-      { id: 'indian_flag', name: '🇮🇳 Monumental Indian National Flag (55m)', x: 0, z: -20, spawnX: 0, spawnZ: 5, icon: '🇮🇳', color: '#f97316', desc: '55m high Tiranga waving over Amar Jawan Jyoti and Central Plaza!' },
+      { id: 'indian_flag', name: '🇮🇳 Monumental Indian National Flag (55m)', x: -36, z: 0, spawnX: -36, spawnZ: 18, icon: '🇮🇳', color: '#f97316', desc: '55m high Tiranga waving over Amar Jawan Jyoti and Central Plaza!' },
       { id: 'iaf_hq', name: '🛩️ Indian Air Force (IAF) HQ Command', x: 180, z: -240, spawnX: 180, spawnZ: -212, icon: '🛩️', color: '#0284c7', desc: 'IAF Training Command HQ with supersonic MiG-21 / Tejas jet & radar dome!' },
       { id: 'army_hq', name: '🎖️ Indian Army Cantonment & ASC Centre', x: -180, z: 220, spawnX: -180, spawnZ: 196, icon: '🎖️', color: '#15803d', desc: 'Army Cantonment HQ with battle tank memorial, sentry towers & parade ground!' },
       { id: 'someshwara_temple', name: '🛕 Sri Someshwara Chola Temple', x: -60, z: -160, spawnX: -60, spawnZ: -136, icon: '🛕', color: '#d97706', desc: 'Ancient Dravidian temple with 32m 5-tier Rajagopuram, Kalasas & Kalyani tank!' },
@@ -20,17 +20,17 @@ export class FullMapOverlay {
       { id: 'hsr_bda_park', name: '🌳 HSR Sector 2 BDA Public Park', x: 80, z: 40, spawnX: 80, spawnZ: 20, icon: '🌳', color: '#16a34a', desc: 'BDA park with red-earth walking track, gazebo bandstand & Tabebuia blooms!' },
       { id: 'koramangala_bda_park', name: '🌳 Koramangala 4th Block BDA Park', x: -140, z: 60, spawnX: -140, spawnZ: 38, icon: '🌳', color: '#15803d', desc: 'Landscaped public walking gardens with ornamental gazebo & benches!' },
       { id: 'indiranagar_bda_park', name: '🌳 Indiranagar Defence BDA Park', x: 120, z: -60, spawnX: 120, spawnZ: -38, icon: '🌳', color: '#059669', desc: 'Serene BDA park with jogging trail, fountain & flowering trees!' },
-      { id: 'silkboard_metro', name: '🚊 Silk Board Metro Station', x: 24, z: 20, spawnX: 34, spawnZ: 20, icon: '🚊', color: '#10b981', desc: 'Elevated Namma Metro station connecting Outer Ring Road & Hosur Road!' },
-      { id: 'hsr_metro', name: '🚊 HSR Layout Metro Station', x: 24, z: 180, spawnX: 34, spawnZ: 180, icon: '🚊', color: '#059669', desc: 'Elevated modern station with canopy concourse & 27th Main connectivity!' },
-      { id: 'vidhana', name: '🏛️ Vidhana Soudha', x: -240, z: -40, spawnX: -205, spawnZ: -26, icon: '🏛️', color: '#f59e0b', desc: 'Karnataka State Legislature with 50m illuminated dome & grand boulevard!' },
+      { id: 'silkboard_metro', name: '🚊 Silk Board Metro Station', x: 32, z: 50, spawnX: 42, spawnZ: 50, icon: '🚊', color: '#10b981', desc: 'Elevated Namma Metro station connecting Outer Ring Road & Hosur Road!' },
+      { id: 'hsr_metro', name: '🚊 HSR Layout Metro Station', x: 32, z: 150, spawnX: 42, spawnZ: 150, icon: '🚊', color: '#059669', desc: 'Elevated modern station with canopy concourse & 27th Main connectivity!' },
+      { id: 'vidhana', name: '🏛️ Vidhana Soudha', x: -240, z: -40, spawnX: -221, spawnZ: -26, icon: '🏛️', color: '#f59e0b', desc: 'Karnataka State Legislature with 50m illuminated dome & grand boulevard!' },
       { id: 'ubcity', name: '🏙️ UB City Tower (120m)', x: -60, z: -100, spawnX: -60, spawnZ: -72, icon: '🏙️', color: '#eab308', desc: 'Luxury skyscraper, rooftop helipad & boutique amphitheatre piazza!' },
-      { id: 'orion', name: '🛍️ Orion Mall & WTC Bangalore', x: 240, z: 320, spawnX: 220, spawnZ: 295, icon: '🛍️', color: '#ec4899', desc: 'Contemporary glass shopping mall, 92m WTC tower & lake boardwalk!' },
+      { id: 'orion', name: '🛍️ Orion Mall & WTC Bangalore', x: 275, z: 320, spawnX: 255, spawnZ: 295, icon: '🛍️', color: '#ec4899', desc: 'Contemporary glass shopping mall, 92m WTC tower & lake boardwalk!' },
       { id: 'lalbagh', name: '🌿 Lalbagh Royal Glass House', x: -140, z: 280, spawnX: -140, spawnZ: 252, icon: '🌿', color: '#16a34a', desc: 'Crystal Palace conservatory, flower shows & Kempegowda rock tower!' },
       { id: 'nandihills', name: '⛰️ Nandi Hills Ghats & Viewpoint', x: 440, z: -460, spawnX: 440, spawnZ: -450, icon: '⛰️', color: '#8b5cf6', desc: 'Drive/walk 75m winding ghat road to panoramic sunrise cliff!' },
       { id: 'airport', name: '✈️ International Airport & Runway', x: 300, z: -380, spawnX: 220, spawnZ: -380, icon: '✈️', color: '#2563eb', desc: 'Take off in airplanes down the 280m runway!' },
-      { id: 'tipu_palace', name: "🏰 Tipu Sultan's Summer Palace", x: -160, z: -80, spawnX: -160, spawnZ: -56, icon: '🏰', color: '#b45309', desc: 'Historic 1791 Indo-Islamic teakwood palace & museum in Kalasipalya!' },
+      { id: 'tipu_palace', name: "🏰 Tipu Sultan's Summer Palace", x: -140, z: -80, spawnX: -140, spawnZ: -56, icon: '🏰', color: '#b45309', desc: 'Historic 1791 Indo-Islamic teakwood palace & museum in Kalasipalya!' },
       { id: 'mysore_palace', name: '👑 Mysore Palace (Amba Vilas)', x: -300, z: 120, spawnX: -255, spawnZ: 120, icon: '👑', color: '#f59e0b', desc: 'Grand royal palace with 42m golden dome, pink chhatris & 100k night lights!' },
-      { id: 'vvpuram_food', name: '🍲 V.V. Puram Food Street (Thindi Beedi)', x: -40, z: 220, spawnX: -40, spawnZ: 196, icon: '🍲', color: '#ef4444', desc: 'Bengaluru street food hub: VB Bakery, Hot Butter Dosa, Gulkand & Filter Coffee!' },
+      { id: 'vvpuram_food', name: '🍲 V.V. Puram Food Street (Thindi Beedi)', x: -40, z: 255, spawnX: -40, spawnZ: 228, icon: '🍲', color: '#ef4444', desc: 'Bengaluru street food hub: VB Bakery, Hot Butter Dosa, Gulkand & Filter Coffee!' },
       { id: 'russell_market', name: '🏛️ Russell Market & Commercial St', x: 100, z: -140, spawnX: 100, spawnZ: -116, icon: '🏛️', color: '#991b1b', desc: 'Colonial 1927 clock tower & bustling Commercial Street shopping alleys!' }
     ];
 
@@ -338,14 +338,28 @@ export class FullMapOverlay {
     ctx.lineWidth = 2;
     ctx.strokeRect(cx + 340 * scale, 0, 80 * scale, h);
 
-    // 3. Arterial 4-Lane Highways (Central Spine & Ring Roads)
+    // 3. Arterial 6-Lane Grand Highways (Central Spine & Ring Roads, 38m wide)
     ctx.fillStyle = '#334155';
-    ctx.fillRect(cx - 10 * scale, 0, 20 * scale, h); // N-S Central Expressway
-    ctx.fillRect(0, cy - 10 * scale, w, 20 * scale); // E-W Boulevard
+    ctx.fillRect(cx - 19 * scale, 0, 38 * scale, h); // N-S Central Expressway
+    ctx.fillRect(0, cy - 19 * scale, w, 38 * scale); // E-W Boulevard
 
     [-200, 200].forEach(c => {
-      ctx.fillRect(cx + (c - 8) * scale, 0, 16 * scale, h);
-      ctx.fillRect(0, cy + (c - 8) * scale, w, 16 * scale);
+      ctx.fillRect(cx + (c - 19) * scale, 0, 38 * scale, h);
+      ctx.fillRect(0, cy + (c - 19) * scale, w, 38 * scale);
+    });
+
+    // Spacious Multi-Lane Roundabouts (Radius 48m)
+    [-200, 0, 200].forEach(rx => {
+      [-200, 0, 200].forEach(rz => {
+        ctx.beginPath();
+        ctx.arc(cx + rx * scale, cy + rz * scale, 48 * scale, 0, Math.PI * 2);
+        ctx.fillStyle = '#334155';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + rx * scale, cy + rz * scale, 12 * scale, 0, Math.PI * 2);
+        ctx.fillStyle = '#15803d'; // Central green island
+        ctx.fill();
+      });
     });
 
     // Highway yellow centerlines
@@ -364,9 +378,9 @@ export class FullMapOverlay {
     ctx.fillRect(cx + (-140 - 32) * scale, cy + (60 - 27) * scale, 65 * scale, 55 * scale); // Koramangala Park
     ctx.fillRect(cx + (120 - 30) * scale, cy + (-60 - 25) * scale, 60 * scale, 50 * scale); // Indiranagar Park
 
-    // 5. Namma Metro Elevated Viaduct Corridor (Green Line)
+    // 5. Namma Metro Elevated Viaduct Corridor (Green Line) at x = 32
     ctx.fillStyle = '#10b981';
-    ctx.fillRect(cx + (24 - 3) * scale, cy - 60 * scale, 6 * scale, 320 * scale);
+    ctx.fillRect(cx + (32 - 3) * scale, cy - 60 * scale, 6 * scale, 320 * scale);
 
     // 6. Airport Runway
     ctx.fillStyle = '#1e293b';

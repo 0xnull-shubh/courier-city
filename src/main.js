@@ -102,13 +102,19 @@ class Game {
     this.brunoCar = new BrunoToyCar(this.scene, this.physicsWorld, this.audioManager, new THREE.Vector3(0, 0, 76), 0xef4444);
     this.vehicles.push(this.brunoCar);
 
-    // 2b. Dangerous Exotic Sports Cars (Bugatti Veyron, Aston Martin DBS, Mercedes-AMG GT)
+    // 2b. Realistic Exotic Supercars & 4x4 Beasts (Bugatti, Aston Martin, AMG GT, Lamborghini Aventador, Porsche 911 GT3 RS, Mahindra Thar)
     const sportsCarConfigs = [
-      { pos: new THREE.Vector3(6.5, 0, 80), model: 'BUGATTI_VEYRON' },       // Bugatti Veyron in Central Plaza!
-      { pos: new THREE.Vector3(-6.5, 0, 80), model: 'ASTON_MARTIN_DBS' },    // Aston Martin DBS in Central Plaza!
-      { pos: new THREE.Vector3(0, 0, 64), model: 'MERCEDES_AMG_GT' },        // Mercedes-AMG GT in Central Plaza!
-      { pos: new THREE.Vector3(-70, 0, 110), model: 'BUGATTI_VEYRON' },      // Bugatti outside Founder's Stark Tower
-      { pos: new THREE.Vector3(220, 0, 300), model: 'ASTON_MARTIN_DBS' }     // Aston Martin outside Orion Mall / WTC
+      { pos: new THREE.Vector3(7.5, 0, 80), model: 'BUGATTI_VEYRON' },          // Bugatti Veyron in Central Plaza!
+      { pos: new THREE.Vector3(-7.5, 0, 80), model: 'ASTON_MARTIN_DBS' },       // Aston Martin DBS in Central Plaza!
+      { pos: new THREE.Vector3(0, 0, 64), model: 'MERCEDES_AMG_GT' },           // Mercedes-AMG GT in Central Plaza!
+      { pos: new THREE.Vector3(-60, 0, -68), model: 'LAMBORGHINI_AVENTADOR' },   // Lamborghini Aventador SVJ at UB City!
+      { pos: new THREE.Vector3(12.0, 0, 65), model: 'PORSCHE_911_GT3_RS' },      // Porsche 911 GT3 RS in Central Plaza!
+      { pos: new THREE.Vector3(-15.0, 0, 95), model: 'MAHINDRA_THAR_4X4' },      // Mahindra Thar 4x4 in Central Plaza!
+      { pos: new THREE.Vector3(430, 0, -440), model: 'MAHINDRA_THAR_4X4' },     // Mahindra Thar 4x4 at Nandi Hills Base!
+      { pos: new THREE.Vector3(-70, 0, 110), model: 'BUGATTI_VEYRON' },         // Bugatti outside Founder's Stark Tower
+      { pos: new THREE.Vector3(220, 0, 300), model: 'ASTON_MARTIN_DBS' },        // Aston Martin outside Orion Mall / WTC
+      { pos: new THREE.Vector3(240, 0, -370), model: 'LAMBORGHINI_AVENTADOR' },  // Lamborghini Aventador at Airport VIP Terminal!
+      { pos: new THREE.Vector3(-205, 0, -15), model: 'PORSCHE_911_GT3_RS' }     // Porsche 911 GT3 RS at Vidhana Soudha!
     ];
     sportsCarConfigs.forEach(cfg => {
       const sports = new SportsCar(this.scene, this.physicsWorld, this.audioManager, cfg.pos, cfg.model);
