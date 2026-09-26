@@ -320,21 +320,40 @@ export class FullMapOverlay {
     if (this.isOpen) {
       this.overlay.classList.remove('map-overlay-hidden');
       this.hideActionCard();
-      this.render();
+      this._startRenderLoop();
     } else {
       this.overlay.classList.add('map-overlay-hidden');
       this.hideActionCard();
+      this._stopRenderLoop();
+    }
+  }
+
+  _startRenderLoop() {
+    this._stopRenderLoop();
+    const loop = () => {
+      if (!this.isOpen) return;
+      this.render();
+      this._rafId = requestAnimationFrame(loop);
+    };
+    this._rafId = requestAnimationFrame(loop);
+  }
+
+  _stopRenderLoop() {
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = null;
     }
   }
 
   render() {
-    if (!this.isOpen || !this.ctx) return;
+    if (!this.ctx) return;
     const ctx = this.ctx;
     const w = this.canvas.width;
     const h = this.canvas.height;
     const cx = w / 2;
     const cy = h / 2;
-    const scale = w / 1300;
+    // World spans ±500 units; scale so ±500 → ~340px on the 800px canvas
+    const scale = w / 1480;
 
     // 1. Satellite Base / Warm Diorama Studio Floor
     ctx.fillStyle = '#0f172a';
@@ -355,6 +374,67 @@ export class FullMapOverlay {
       ctx.lineTo(w, y);
       ctx.stroke();
     }
+
+    // 1b. City District Block Fills (colored building zones between roads)
+    ctx.save();
+    ctx.globalAlpha = 0.75;
+
+    // District block definitions: [worldX, worldZ, worldW, worldH, color, label]
+    const districts = [
+      // Central Business District (between main roads)
+      [-170, -170, 140, 140, '#1a2744', ''],
+      [30, -170, 140, 140, '#1c2038', ''],
+      [-170, 30, 140, 140, '#1a2744', ''],
+      [30, 30, 140, 140, '#1c2038', ''],
+      // Residential zones
+      [-370, -170, 140, 140, '#1a3025', ''],
+      [230, -170, 100, 140, '#1a2530', ''],
+      [-370, 30, 140, 140, '#1a3025', ''],
+      [230, 30, 100, 140, '#1a2530', ''],
+      // North districts
+      [-370, -370, 140, 170, '#1c2038', ''],
+      [-170, -370, 140, 170, '#1a2530', ''],
+      [30, -370, 140, 170, '#1a3025', ''],
+      [230, -370, 100, 170, '#221a20', ''],
+      // South districts
+      [-370, 230, 140, 170, '#1a3025', ''],
+      [-170, 230, 140, 170, '#1a2744', ''],
+      [30, 230, 140, 170, '#1c2038', ''],
+      [230, 230, 100, 170, '#1a2530', ''],
+      // Koramangala (SW quadrant highlight)
+      [-170, 30, 60, 60, '#1f2d1a', ''],
+      // HSR Layout (SE quadrant highlight)
+      [30, 30, 60, 60, '#1a2d2d', ''],
+    ];
+
+    districts.forEach(([wx, wz, ww, wh, color]) => {
+      const sx = cx + wx * scale;
+      const sy = cy + wz * scale;
+      ctx.fillStyle = color;
+      ctx.fillRect(sx, sy, ww * scale, wh * scale);
+    });
+
+    // Dense city block hatching (small building footprints inside districts)
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#334155';
+    const blockSize = 12 * scale;
+    const blockGap = 5 * scale;
+    const stride = blockSize + blockGap;
+    for (let bx = cx - 480 * scale; bx < cx + 480 * scale; bx += stride) {
+      for (let bz = cy - 480 * scale; bz < cy + 480 * scale; bz += stride) {
+        // Skip road corridors (±20 units wide at 0 and ±200)
+        const worldX = (bx - cx) / scale;
+        const worldZ = (bz - cy) / scale;
+        const onRoadX = Math.abs(worldX) < 22 || Math.abs(Math.abs(worldX) - 200) < 22;
+        const onRoadZ = Math.abs(worldZ) < 22 || Math.abs(Math.abs(worldZ) - 200) < 22;
+        if (!onRoadX && !onRoadZ) {
+          ctx.fillRect(bx, bz, blockSize, blockSize);
+        }
+      }
+    }
+
+    ctx.globalAlpha = 1.0;
+    ctx.restore();
 
     // 2. East River (Ulsoor / Sankey water corridor)
     ctx.fillStyle = '#0284c7';
@@ -672,6 +752,67 @@ export class FullMapOverlay {
       ctx.fill();
       ctx.restore();
     }
+
+    // 12. District name labels (semi-transparent, don't overlap pins)
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.font = 'bold 10px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#94a3b8';
+    const districtLabels = [
+      { name: 'Koramangala', x: -100, z: 100 },
+      { name: 'HSR Layout', x: 100, z: 100 },
+      { name: 'BTM Layout', x: -100, z: -100 },
+      { name: 'Indiranagar', x: 100, z: -100 },
+      { name: 'Jayanagar', x: -300, z: 100 },
+      { name: 'Banashankari', x: -300, z: -100 },
+      { name: 'Electronic City', x: 100, z: 300 },
+      { name: 'Whitefield', x: 300, z: -300 },
+    ];
+    districtLabels.forEach(({ name, x, z }) => {
+      ctx.fillText(name, cx + x * scale, cy + z * scale);
+    });
+    ctx.globalAlpha = 1.0;
+    ctx.restore();
+
+    // 13. Compass rose (top-right corner)
+    ctx.save();
+    const cr = { x: w - 36, y: 36 };
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = '#e2e8f0';
+    // N arrow
+    ctx.beginPath();
+    ctx.moveTo(cr.x, cr.y - 20);
+    ctx.lineTo(cr.x + 5, cr.y - 8);
+    ctx.lineTo(cr.x - 5, cr.y - 8);
+    ctx.closePath();
+    ctx.fill();
+    // S arrow (hollow)
+    ctx.beginPath();
+    ctx.moveTo(cr.x, cr.y + 20);
+    ctx.lineTo(cr.x + 5, cr.y + 8);
+    ctx.lineTo(cr.x - 5, cr.y + 8);
+    ctx.closePath();
+    ctx.strokeStyle = '#64748b';
+    ctx.stroke();
+    // N label
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 10px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('N', cr.x, cr.y - 24);
+    ctx.restore();
+
+    // 14. Scale bar (bottom-left)
+    ctx.save();
+    const sbX = 16, sbY = h - 20;
+    const sbLen = 100 * scale; // 100 world units
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(sbX, sbY, sbLen, 3);
+    ctx.font = '9px Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('100m', sbX + sbLen + 4, sbY + 3);
+    ctx.restore();
   }
 
   getGpsDirection(playerPos) {

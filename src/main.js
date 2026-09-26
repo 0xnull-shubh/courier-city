@@ -210,8 +210,8 @@ class Game {
     this.nearbyVehicle = null;
     this.interactionCooldown = false;
 
-    // Immediately seat the player in the Bruno Simon Toy Roadster
-    this.enterVehicle(this.brunoCar);
+    // Immediately seat the player in the flagship Bugatti Veyron at Central Plaza
+    this.enterVehicle(this.starterSupercar);
   }
 
   initEvents() {
