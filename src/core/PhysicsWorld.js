@@ -33,15 +33,20 @@ export class PhysicsWorld {
   }
 
   addStaticBox(x, y, z, hx, hy, hz, isRamp = false, isPillar = false, isTree = false) {
-    const shape = new CANNON.Box(new CANNON.Vec3(hx, hy, hz));
+    // Cap building physics height to match visually scaled-down buildings (scale.y=0.38).
+    // Trees, pillars and ramps keep their original height for correct collision feel.
+    const cappedHy = (isRamp || isPillar || isTree) ? hy : Math.min(hy, 4.2);
+    const cappedY  = (isRamp || isPillar || isTree) ? y  : Math.min(y,  cappedHy);
+
+    const shape = new CANNON.Box(new CANNON.Vec3(hx, cappedHy, hz));
     const body = new CANNON.Body({
       mass: 0,
-      position: new CANNON.Vec3(x, y, z),
+      position: new CANNON.Vec3(x, cappedY, z),
       shape: shape
     });
     this.world.addBody(body);
 
-    this.obstacles.push({ x, y, z, hx, hy, hz, isRamp, isPillar, isTree });
+    this.obstacles.push({ x, y: cappedY, z, hx, hy: cappedHy, hz, isRamp, isPillar, isTree });
     return body;
   }
 

@@ -26,7 +26,77 @@ export class CityBuilder {
     this.observationElevators = [];
 
     this.initMaterials();
+
+    // ── Global building height limiter ───────────────────────────────────
+    // All landmark / building geometry is added into this group.
+    // Scaling it on Y = 0.38 makes even 90m structures appear ≤ 34m,
+    // keeping them in the camera's comfortable view range without needing
+    // to rewrite every individual height value in 5000+ lines of code.
+    this.buildingGroup = new THREE.Group();
+    this.buildingGroup.scale.y = 0.38;
+    this.scene.add(this.buildingGroup);
+    // ─────────────────────────────────────────────────────────────────────
+
     this.buildWorld();
+  }
+
+  // Helper called by all landmark/building methods to add scaled objects
+  _sb(obj) { this.buildingGroup.add(obj); }
+
+  buildWorld() {
+    // Ground, roads, river – added directly to scene (NOT height-scaled)
+    this.createLandscapeAndRiver();
+    this.createHimalayanMountains();
+    this.createRoadNetwork();
+    this.createAirportRunwayAndHelipad();
+
+    // ── Monkey-patch scene.add → this.buildingGroup.add for all landmarks ──
+    // This means every mesh created inside landmark methods automatically goes
+    // into the height-scaled group. Ground/roads above were already added.
+    const _origAdd = this.scene.add.bind(this.scene);
+    this.scene.add = (...args) => this.buildingGroup.add(...args);
+
+    this.createYetiAndPolarBears();
+    this.createCityZoo();
+    this.createBankAndSchoolDistricts();
+    this.createGasStationAndHospital();
+
+    // Dispersed iconic global & Indian landmarks across 1200m
+    this.buildIndiaGate();
+    this.buildTajMahal();
+    this.buildRedFort();
+    this.buildRashtrapatiBhavan();
+    this.buildEiffelTower();
+    this.buildStatueOfLiberty();
+
+    this.createNightclubDistrict();
+    this.buildIndianNationalFlag();
+    this.buildBdaParks();
+    this.buildBdaComplexes();
+    this.buildRoadRoundaboutsChorahas();
+    this.buildBangaloreColleges();
+    this.buildBnmInstitute();
+    this.buildKumaraswamyLayout();
+    this.buildFoundersBuildingStarkTower();
+    this.buildHinduTemples();
+    this.buildIndianAirForceHQ();
+    this.buildIndianArmyHQ();
+    this.buildVidhanaSoudha();
+    this.buildUBCity();
+    this.buildOrionMall();
+    this.buildLalbaghGardens();
+    this.buildNandiHills();
+    this.buildTownHall();
+    this.createBangaloreDistricts();
+    this.createCityVegetation();
+    this.buildTipuSultanSummerPalace();
+    this.buildMysorePalace();
+    this.buildVvPuramFoodStreet();
+    this.buildRussellMarketAndCommercialStreet();
+    this.createJumpRamps();
+
+    // Restore original scene.add
+    this.scene.add = _origAdd;
   }
 
   initMaterials() {
@@ -80,52 +150,6 @@ export class CityBuilder {
       lampPost: new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.8 }),
       lampGlow: new THREE.MeshBasicMaterial({ color: 0xfef08a })
     };
-  }
-
-  buildWorld() {
-    this.createLandscapeAndRiver();
-    this.createHimalayanMountains();
-    this.createYetiAndPolarBears();
-    this.createCityZoo();
-    this.createBankAndSchoolDistricts();
-    this.createGasStationAndHospital();
-    this.createRoadNetwork();
-    this.createAirportRunwayAndHelipad();
-
-    // Dispersed iconic global & Indian landmarks across 1200m
-    this.buildIndiaGate();          // Central Ceremonial Axis (0, -140)
-    this.buildTajMahal();           // East Riverfront (320, -180)
-    this.buildRedFort();           // North-West Citadel (-320, -260)
-    this.buildRashtrapatiBhavan();  // South-West Palace (-340, 240)
-    this.buildEiffelTower();        // South-East Champ de Mars (180, 260)
-    this.buildStatueOfLiberty();    // Far-East Liberty Island (440, 80)
-
-    this.createNightclubDistrict(); // Neon Nightclub & Rooftop Lounge (-80, -60)
-    this.buildIndianNationalFlag(); // Monumental 55m Tiranga in Central Plaza (0, -20)
-    this.buildBdaParks();           // BDA Public Parks in HSR, Koramangala & Indiranagar
-    this.buildBdaComplexes();       // BDA Commercial Shopping Complexes (HSR & Koramangala)
-    this.buildRoadRoundaboutsChorahas(); // Grand roundabouts/chorahas with Kamal (Lotus) monuments
-    this.buildBangaloreColleges();  // BMS College of Engineering & IISc Heritage Campus
-    this.buildBnmInstitute();       // BNM Institute of Technology (BNMIT) in South Bangalore (-140, 160)
-    this.buildKumaraswamyLayout();  // Kumaraswamy Layout Civic District & Viewpoint (-200, 180)
-    this.buildFoundersBuildingStarkTower(); // Unique Stark Tower Design in BTM Layout (-70, 130)
-    this.buildHinduTemples();       // Sri Someshwara Rajagopuram, Bull Temple & ISKCON
-    this.buildIndianAirForceHQ();   // IAF HQ Training Command with fighter jet monument (180, -240)
-    this.buildIndianArmyHQ();       // Indian Army Cantonment HQ with battle tank monument (-180, 220)
-    this.buildVidhanaSoudha();      // Majestic Karnataka State Legislature (-240, -40)
-    this.buildUBCity();             // UB City Tower & Luxury Amphitheatre (-60, -100)
-    this.buildOrionMall();          // Orion Mall & World Trade Center Bangalore (240, 320)
-    this.buildLalbaghGardens();     // Lalbagh Glass House & Kempegowda Tower (-140, 280)
-    this.buildNandiHills();         // Nandi Hills Ghats & Sunrise Viewpoint (440, -460)
-    this.buildTownHall();           // Bangalore Town Hall (40, 200)
-    this.createBangaloreDistricts(); // Koramangala, HSR, BTM & Auto-rickshaw stands
-    this.createCityVegetation();    // 350+ multi-species trees, parks & street props
-    this.buildTipuSultanSummerPalace();
-    this.buildMysorePalace();
-    this.buildVvPuramFoodStreet();
-    this.buildRussellMarketAndCommercialStreet();
-
-    this.createJumpRamps();
   }
 
   createLandscapeAndRiver() {

@@ -908,6 +908,10 @@ class Game {
       if (this.skyCreatures) this.skyCreatures.update(dt, currentTime * 0.001);
       if (this.animalSystem) this.animalSystem.update(dt, currentTime * 0.001);
     }
+    // Animal collision physics — check every 3rd frame (perf-friendly)
+    if (this._sysFrame % 3 === 0 && this.player.isDriving && this.activeVehicle) {
+      if (this.animalSystem) this.animalSystem.checkVehicleCollisions(this.activeVehicle);
+    }
     this.handleVehicleInteractions();
     this.handleObservationElevators();
     this.updateWaypointAnimation(dt, currentTime);
