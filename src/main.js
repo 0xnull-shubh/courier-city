@@ -23,6 +23,8 @@ import { Minimap } from './world/Minimap.js';
 import { TrafficSystem } from './world/TrafficSystem.js';
 import { HUD } from './ui/HUD.js';
 import { FullMapOverlay } from './ui/FullMapOverlay.js';
+import { SkidMarkSystem } from './world/SkidMarkSystem.js';
+import { InteractiveProps } from './world/InteractiveProps.js';
 
 class Game {
   constructor() {
@@ -57,15 +59,16 @@ class Game {
     // Cap pixelRatio at 1.5 for Retina displays to avoid 4x fragment shader fillrate bottleneck
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 1.1;
   }
 
   initScene() {
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.1, 1600);
-    this.camera.position.set(0, 4.5, 9);
+    // Bruno Simon low-FOV diorama camera lens (38 deg base)
+    this.camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 1600);
+    this.camera.position.set(0, 8.0, 16.0);
   }
 
   initSystems() {
@@ -78,6 +81,8 @@ class Game {
     this.cityBuilder = new CityBuilder(this.scene, this.physicsWorld);
     this.metroSystem = new MetroSystem(this.scene, this.physicsWorld, this.audioManager);
     this.crowdSystem = new CrowdSystem(this.scene);
+    this.skidSystem = new SkidMarkSystem(this.scene);
+    this.interactiveProps = new InteractiveProps(this.scene, this.physicsWorld, this.audioManager);
     this.minimap = new Minimap('radar-canvas');
     this.hud = new HUD();
     this.fullMapOverlay = new FullMapOverlay(this);
@@ -168,6 +173,13 @@ class Game {
     // 4. Helicopter stationed at Airport Helipad (x = 340, z = -352)
     this.helicopter = new Helicopter(this.scene, this.audioManager, new THREE.Vector3(340, 0.4, -352));
     this.vehicles.push(this.helicopter);
+
+    // Connect Bruno Simon dynamic skidmark system to fleet
+    this.vehicles.forEach(v => {
+      if (typeof v.setSkidSystem === 'function') {
+        v.setSkidSystem(this.skidSystem);
+      }
+    });
 
     // 5. Ambient Traffic
     this.trafficSystem = new TrafficSystem(this.scene, this.vehicles.filter(v => !v.isAirborne && !v.isAirplane && !v.isHelicopter));
@@ -574,15 +586,14 @@ class Game {
   animate(currentTime) {
     requestAnimationFrame(this.animate);
 
-    // Limit to ~60 FPS (16.67ms per frame)
-    if (this.lastRender && (currentTime - this.lastRender) < 16.67) {
-      // Skip this frame to maintain stable FPS
-      return;
-    }
-    this.lastRender = currentTime;
-
-    const dt = Math.min((currentTime - this.lastTime) * 0.001, 0.08);
+    // Frame-rate independent delta time (smooth 60-120 FPS VSync without frame judder)
+    const dt = Math.min((currentTime - this.lastTime) * 0.001, 0.05);
     this.lastTime = currentTime;
+
+    // Cannon-es physics sub-step & interactive physical props
+    this.physicsWorld.step(dt);
+    if (this.skidSystem) this.skidSystem.update(dt);
+    if (this.interactiveProps) this.interactiveProps.update(dt);
 
     // Traffic and crowd must update every frame for smooth movement
     this.trafficSystem.update(dt, this.activeVehicle, this.player);

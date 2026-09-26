@@ -65,8 +65,13 @@ export class SportsCar {
     this.steerAngle = 0;
     this.maxSteerAngle = 0.52;
     this.headlightsOn = false;
+    this.skidSystem = null;
 
     this.initMesh();
+  }
+
+  setSkidSystem(skidSystem) {
+    this.skidSystem = skidSystem;
   }
 
   initMesh() {
@@ -419,6 +424,25 @@ export class SportsCar {
       // Body roll during high-g cornering
       const targetRoll = -this.steerAngle * (this.currentSpeed / this.maxSpeed) * 0.18;
       this.roll += (targetRoll - this.roll) * Math.min(1, dt * 8);
+
+      // Tire skidmarks & smoke on drift or hard braking
+      if (this.skidSystem) {
+        const isHardCornering = Math.abs(this.steerAngle) > 0.22 && this.speed > 10.0;
+        const isDrifting = handbrake && this.speed > 3.0;
+        if (isDrifting || isHardCornering) {
+          const rearLeftWorld = new THREE.Vector3(-1.08, 0.05, -1.25)
+            .applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw)
+            .add(this.position);
+          const rearRightWorld = new THREE.Vector3(1.08, 0.05, -1.25)
+            .applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw)
+            .add(this.position);
+          const alpha = isDrifting ? 0.9 : 0.6;
+          this.skidSystem.addSkid(rearLeftWorld, rearRightWorld, alpha);
+          this.skidSystem.emitSmoke(rearLeftWorld);
+        } else {
+          this.skidSystem.resetCurrentTrack();
+        }
+      }
 
       // Spin wheels
       const wheelCircumference = Math.PI * 0.78;

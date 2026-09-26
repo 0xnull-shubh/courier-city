@@ -5,21 +5,25 @@ export class CameraController {
     this.camera = camera;
     this.domElement = domElement;
 
-    // View modes: 'chase' (rear view), 'free' (orbit), 'topDown' (overhead view)
-    this.viewMode = 'chase'; // Start in elevated chase view so character is immediately visible!
+    // View modes:
+    // 'chase': Elevated 45-degree smooth trailing view
+    // 'isometric': Classic Bruno Simon 3/4 isometric diorama view
+    // 'topDown': High strategy navigation map view
+    // 'free': Mouse orbital view
+    this.viewMode = 'chase';
 
-    // Camera parameters: 45 degree elevated look-down view
+    // Camera parameters: Bruno Simon low-FOV diorama perspective
     this.yaw = 0;
-    this.pitch = 0.785; // 45 degree angle looking down towards player
-    this.minPitch = 0.35; // Don't flip under ground
-    this.maxPitch = 1.45; // Up to near-vertical top-down
+    this.pitch = 0.82; // ~47 degree elevated look-down angle
+    this.minPitch = 0.35;
+    this.maxPitch = 1.45;
 
-    this.distance = 12.0; // Distance behind player
-    this.targetDistance = 12.0;
+    this.distance = 16.0;
+    this.targetDistance = 16.0;
     this.eyeHeight = 2.0;
 
-    // Camera position smoothing - start right behind player
-    this.currentPosition = new THREE.Vector3(0, 10.0, 92.0);
+    // Camera position smoothing
+    this.currentPosition = new THREE.Vector3(0, 14.0, 95.0);
     this.currentLookAt = new THREE.Vector3(0, 1.0, 80.0);
 
     // Mouse drag orbit
@@ -70,7 +74,7 @@ export class CameraController {
     });
 
     window.addEventListener('wheel', (e) => {
-      this.targetDistance = Math.max(3.5, Math.min(45, this.targetDistance + e.deltaY * 0.012));
+      this.targetDistance = Math.max(6.0, Math.min(50.0, this.targetDistance + e.deltaY * 0.015));
     }, { passive: true });
 
     // Keyboard controls
@@ -103,50 +107,61 @@ export class CameraController {
 
   toggleViewMode() {
     if (this.viewMode === 'chase') {
+      this.viewMode = 'isometric';
+      this.pitch = 0.82;
+      this.targetDistance = 20.0;
+    } else if (this.viewMode === 'isometric') {
       this.viewMode = 'topDown';
       this.pitch = 1.38;
-      this.targetDistance = 28.0;
+      this.targetDistance = 32.0;
     } else if (this.viewMode === 'topDown') {
       this.viewMode = 'free';
-      this.pitch = 0.785;
-      this.targetDistance = 12.0;
+      this.pitch = 0.82;
+      this.targetDistance = 16.0;
     } else {
       this.viewMode = 'chase';
-      this.pitch = 0.785; // 45 degree default angle facing ground
-      this.targetDistance = 12.0;
+      this.pitch = 0.82;
+      this.targetDistance = 16.0;
     }
   }
 
   setMode(mode) {
     if (mode === 'vehicle') {
-      this.targetDistance = 14.5;
+      this.targetDistance = 18.0;
       this.eyeHeight = 2.0;
-      if (this.viewMode === 'chase') this.pitch = 0.785; // 45 deg facing downward towards ground
+      if (this.viewMode === 'chase' || this.viewMode === 'isometric') this.pitch = 0.82;
     } else if (mode === 'airplane' || mode === 'helicopter') {
-      this.targetDistance = 34.0;
-      this.eyeHeight = 3.0;
-      this.pitch = 0.75;
+      this.targetDistance = 36.0;
+      this.eyeHeight = 3.5;
+      this.pitch = 0.78;
     } else {
       // On foot
-      this.targetDistance = 11.0;
+      this.targetDistance = 13.0;
       this.eyeHeight = 1.8;
-      if (this.viewMode === 'chase') this.pitch = 0.785; // 45 deg facing downward towards ground
+      if (this.viewMode === 'chase' || this.viewMode === 'isometric') this.pitch = 0.82;
     }
   }
 
   update(dt, targetPos, entityYaw = 0, speedKmh = 0) {
     if (!targetPos || !Number.isFinite(targetPos.x)) return;
 
-    // 1. In 'chase' mode (default), strictly lock behind car or player back and smoothly track turns!
+    // 1. View Mode yaw updates
     if (this.viewMode === 'chase') {
       if (!this.isDragging && !this.keys.left && !this.keys.right) {
         let desiredYaw = entityYaw - Math.PI;
         let diff = desiredYaw - this.yaw;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
-        // Smoothly rotate camera with the vehicle's turn
-        this.yaw += diff * Math.min(1, dt * 6.5);
+        // Smoothly follow vehicle orientation
+        this.yaw += diff * Math.min(1, dt * 5.5);
       }
+    } else if (this.viewMode === 'isometric') {
+      // Classic fixed 3/4 isometric perspective
+      const desiredYaw = -Math.PI * 0.25; // 45 degree angle
+      let diff = desiredYaw - this.yaw;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      this.yaw += diff * Math.min(1, dt * 6.0);
     }
 
     // 2. Keyboard pitch/yaw adjustments
@@ -168,10 +183,10 @@ export class CameraController {
     const zoomAlpha = 1 - Math.exp(-8 * dt);
     this.distance += (this.targetDistance - this.distance) * zoomAlpha;
 
-    // 4. Smooth dynamic FOV
+    // 4. Low-FOV Diorama lens (Bruno Simon style: 38 deg base, gentle speed expansion)
     const safeSpeed = (Number.isFinite(speedKmh) && speedKmh > 0) ? speedKmh : 0;
-    const baseFov = 54;
-    const extraFov = Math.min(safeSpeed * 0.12, 12);
+    const baseFov = 38; // Clean diorama look without fisheye distortion
+    const extraFov = Math.min(safeSpeed * 0.1, 8);
     const targetFov = baseFov + extraFov;
     const fovAlpha = 1 - Math.exp(-5 * dt);
     const currentFov = (Number.isFinite(this.camera.fov) && this.camera.fov > 10) ? this.camera.fov : baseFov;
@@ -187,7 +202,7 @@ export class CameraController {
     const offsetY = sinPitch * this.distance + this.eyeHeight;
     const offsetZ = Math.cos(this.yaw) * cosPitch * this.distance;
 
-    const minCamY = targetPos.y + 2.2;
+    const minCamY = targetPos.y + 2.5;
     const desiredCamY = targetPos.y + offsetY;
 
     const desiredCamPos = new THREE.Vector3(
@@ -197,14 +212,14 @@ export class CameraController {
     );
 
     // Frame-rate independent exponential smoothing (butter smooth, zero jitter)
-    const posAlpha = 1 - Math.exp(-14 * dt);
+    const posAlpha = 1 - Math.exp(-11 * dt);
     this.currentPosition.lerp(desiredCamPos, posAlpha);
     this.camera.position.copy(this.currentPosition);
 
     // Look at vehicle / character center with smooth exponential tracking
     const lookTargetY = targetPos.y + Math.min(1.2, this.eyeHeight * 0.6);
     const desiredLookAt = new THREE.Vector3(targetPos.x, lookTargetY, targetPos.z);
-    const lookAlpha = 1 - Math.exp(-16 * dt);
+    const lookAlpha = 1 - Math.exp(-14 * dt);
     this.currentLookAt.lerp(desiredLookAt, lookAlpha);
     this.camera.lookAt(this.currentLookAt);
   }
