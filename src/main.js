@@ -25,6 +25,7 @@ import { HUD } from './ui/HUD.js';
 import { FullMapOverlay } from './ui/FullMapOverlay.js';
 import { SkidMarkSystem } from './world/SkidMarkSystem.js';
 import { InteractiveProps } from './world/InteractiveProps.js';
+import { BrunoToyCar } from './entities/BrunoToyCar.js';
 
 class Game {
   constructor() {
@@ -95,11 +96,15 @@ class Game {
     // 2. Comprehensive High-Performance, Exotic & City Vehicle Fleet
     this.vehicles = [];
 
-    // 2a. Dangerous Exotic Sports Cars (Bugatti Veyron, Aston Martin DBS, Mercedes-AMG GT)
+    // 2a. Flagship Bruno Simon Toy Roadster (Center of Central Plaza)
+    this.brunoCar = new BrunoToyCar(this.scene, this.physicsWorld, this.audioManager, new THREE.Vector3(0, 0, 76), 0xef4444);
+    this.vehicles.push(this.brunoCar);
+
+    // 2b. Dangerous Exotic Sports Cars (Bugatti Veyron, Aston Martin DBS, Mercedes-AMG GT)
     const sportsCarConfigs = [
       { pos: new THREE.Vector3(6.5, 0, 80), model: 'BUGATTI_VEYRON' },       // Bugatti Veyron in Central Plaza!
       { pos: new THREE.Vector3(-6.5, 0, 80), model: 'ASTON_MARTIN_DBS' },    // Aston Martin DBS in Central Plaza!
-      { pos: new THREE.Vector3(0, 0, 68), model: 'MERCEDES_AMG_GT' },        // Mercedes-AMG GT right in front of Spawn!
+      { pos: new THREE.Vector3(0, 0, 64), model: 'MERCEDES_AMG_GT' },        // Mercedes-AMG GT in Central Plaza!
       { pos: new THREE.Vector3(-70, 0, 110), model: 'BUGATTI_VEYRON' },      // Bugatti outside Founder's Stark Tower
       { pos: new THREE.Vector3(220, 0, 300), model: 'ASTON_MARTIN_DBS' }     // Aston Martin outside Orion Mall / WTC
     ];
@@ -108,7 +113,7 @@ class Game {
       this.vehicles.push(sports);
     });
 
-    // 2b. Badass Monster Trucks (Colossal 66-inch wheels, heavy suspension)
+    // 2c. Badass Monster Trucks (Colossal 66-inch wheels, heavy suspension)
     const monsterTruckConfigs = [
       new THREE.Vector3(14.0, 0, 95),   // Central Plaza Off-Road Zone
       new THREE.Vector3(-140, 0, 140)   // Outside BNM Institute / South Ring Road
@@ -118,7 +123,7 @@ class Game {
       this.vehicles.push(monster);
     });
 
-    // 2c. BMTC Volvo Vajra City Buses (Bangalore Public Transport Route 500-D)
+    // 2d. BMTC Volvo Vajra City Buses (Bangalore Public Transport Route 500-D)
     const bmtcBusConfigs = [
       new THREE.Vector3(34.5, 0, 50),   // Silk Board Metro Bus Terminal
       new THREE.Vector3(34.5, 0, 150),  // HSR Layout 27th Main Bus Stand
@@ -129,7 +134,7 @@ class Game {
       this.vehicles.push(bus);
     });
 
-    // 2d. Standard Sport Sedans
+    // 2e. Standard Sport Sedans (Highway Ambient Traffic)
     const carFleetConfigs = [
       { pos: new THREE.Vector3(45, 0, 6.5), color: 0x22c55e },    // East Highway 4-lane
       { pos: new THREE.Vector3(-45, 0, -6.5), color: 0xf59e0b },  // West Highway 4-lane
@@ -139,10 +144,11 @@ class Game {
     ];
     carFleetConfigs.forEach(cfg => {
       const car = new Vehicle(this.scene, this.physicsWorld, this.audioManager, cfg.pos, cfg.color);
+      car.isTrafficCar = true;
       this.vehicles.push(car);
     });
 
-    // 2b. Bengaluru Auto-Rickshaws (Iconic Yellow-Green 3-Wheelers)
+    // 2f. Bengaluru Auto-Rickshaws (Iconic Yellow-Green 3-Wheelers)
     const autoPositions = [
       new THREE.Vector3(34.5, 0, 28),   // Silk Board Metro Station Feeder Auto Stand
       new THREE.Vector3(34.5, 0, 172),  // HSR Layout Metro Station Feeder Auto Stand
@@ -155,7 +161,7 @@ class Game {
       this.vehicles.push(auto);
     });
 
-    // 2c. Royal Enfield Bullet Motorbikes
+    // 2g. Royal Enfield Bullet Motorbikes
     const bikeConfigs = [
       { pos: new THREE.Vector3(12, 0, 82), color: 0x1e293b },  // Central Plaza Black Bullet
       { pos: new THREE.Vector3(70, 0, 95), color: 0x15803d },  // HSR Layout BDA Green Bullet
@@ -181,8 +187,8 @@ class Game {
       }
     });
 
-    // 5. Ambient Traffic
-    this.trafficSystem = new TrafficSystem(this.scene, this.vehicles.filter(v => !v.isAirborne && !v.isAirplane && !v.isHelicopter));
+    // 5. Ambient Traffic (Only controls designated traffic cars)
+    this.trafficSystem = new TrafficSystem(this.scene, this.vehicles);
 
     // 6. In-World 3D GPS Waypoint Hologram Beacon
     this.initWaypointBeacon();
@@ -190,6 +196,9 @@ class Game {
     this.activeVehicle = null;
     this.nearbyVehicle = null;
     this.interactionCooldown = false;
+
+    // Immediately seat the player in the Bruno Simon Toy Roadster
+    this.enterVehicle(this.brunoCar);
   }
 
   initEvents() {
@@ -407,19 +416,21 @@ class Game {
     this.nearbyVehicle = nearest;
 
     if (nearest) {
-      const typeLabel = nearest.isAirplane
-        ? 'pilot airplane'
-        : (nearest.isHelicopter
-          ? 'fly helicopter'
-          : (nearest.isSportsCar
-            ? `drive ${nearest.carName || 'Supercar'}`
-            : (nearest.isMonsterTruck
-              ? 'drive Monster Truck'
-              : (nearest.isBmtcBus
-                ? 'drive BMTC Volvo Bus'
-                : (nearest.isAutoRickshaw
-                  ? 'drive Auto-Rickshaw'
-                  : (nearest.isMotorbike ? 'ride Bullet Motorbike' : 'drive car'))))));
+      const typeLabel = nearest.isBrunoToyCar
+        ? 'drive Bruno Simon Toy Roadster'
+        : (nearest.isAirplane
+          ? 'pilot airplane'
+          : (nearest.isHelicopter
+            ? 'fly helicopter'
+            : (nearest.isSportsCar
+              ? `drive ${nearest.carName || 'Supercar'}`
+              : (nearest.isMonsterTruck
+                ? 'drive Monster Truck'
+                : (nearest.isBmtcBus
+                  ? 'drive BMTC Volvo Bus'
+                  : (nearest.isAutoRickshaw
+                    ? 'drive Auto-Rickshaw'
+                    : (nearest.isMotorbike ? 'ride Bullet Motorbike' : 'drive car')))))));
       this.hud.showPrompt(`Press <kbd>F</kbd> to ${typeLabel}`);
       if (interactKey && !this.interactionCooldown) {
         this.interactionCooldown = true;
@@ -481,7 +492,9 @@ class Game {
     this.hud.setMode('vehicle');
     this.audioManager.startEngine();
 
-    if (vehicle.isAirplane) {
+    if (vehicle.isBrunoToyCar) {
+      this.hud.showToast('Bruno Simon Toy Roadster: [W] Throttle, [A/D] Steer, [SPACE] Drift, [H] Horn, [F] Exit/Walk');
+    } else if (vehicle.isAirplane) {
       this.hud.showToast('Airplane: Hold W to throttle, SPACE to climb into sky, A/D to steer!');
     } else if (vehicle.isHelicopter) {
       this.hud.showToast('Helicopter: Hold SPACE to ascend/lift off, SHIFT to descend, WASD to fly!');
@@ -590,10 +603,9 @@ class Game {
     const dt = Math.min((currentTime - this.lastTime) * 0.001, 0.05);
     this.lastTime = currentTime;
 
-    // Cannon-es physics sub-step & interactive physical props
+    // Cannon-es physics sub-step & skidmark system
     this.physicsWorld.step(dt);
     if (this.skidSystem) this.skidSystem.update(dt);
-    if (this.interactiveProps) this.interactiveProps.update(dt);
 
     // Traffic and crowd must update every frame for smooth movement
     this.trafficSystem.update(dt, this.activeVehicle, this.player);
@@ -633,7 +645,7 @@ class Game {
       );
       activePos = metroPos;
       activeYaw = 0;
-      this.cameraController.update(dt, metroPos, 0, Math.round(this.metroSystem.currentSpeed * 3.6));
+      this.cameraController.update(dt, metroPos, 0, Math.round(this.metroSystem.currentSpeed * 3.6), true);
       this.hud.updateSpeed(Math.round(this.metroSystem.currentSpeed * 3.6));
     } else {
       if (this.player.isDriving && this.activeVehicle) {
@@ -644,12 +656,20 @@ class Game {
           ? this.activeVehicle.speedKmh
           : (this.activeVehicle.speed ? Math.round(this.activeVehicle.speed * 3.6) : 0);
         const speed = Number.isFinite(rawSpeed) ? Math.max(0, Math.round(rawSpeed)) : 0;
-        this.cameraController.update(dt, activePos, activeYaw, speed);
+        this.cameraController.update(dt, activePos, activeYaw, speed, true);
         this.hud.updateSpeed(speed);
       } else {
         // Walking as player
-        this.cameraController.update(dt, activePos, activeYaw, 0);
+        this.cameraController.update(dt, activePos, activeYaw, 0, false);
       }
+    }
+
+    // Dynamic props collision physics update with active vehicle / character
+    if (this.interactiveProps) {
+      const propSpeed = (this.player.isDriving && this.activeVehicle)
+        ? (this.activeVehicle.speed || 0)
+        : this.player.velocity.length();
+      this.interactiveProps.update(dt, activePos, propSpeed, activeYaw);
     }
 
     this.environment.update(dt, activePos);

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export class TrafficSystem {
   constructor(scene, vehicles) {
     this.scene = scene;
-    this.vehicles = vehicles.filter(v => !v.isAirplane && !v.isHelicopter);
+    this.vehicles = vehicles.filter(v => v.isTrafficCar && !v.isAirplane && !v.isHelicopter);
 
     // Routes across the highways
     // 4-Lane traffic routing: lanes 1 & 2 northbound/eastbound, lanes 3 & 4 southbound/westbound

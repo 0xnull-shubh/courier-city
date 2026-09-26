@@ -339,6 +339,11 @@ export class Player {
     const r = this.radius;
 
     for (const b of obstacles) {
+      // Broadphase spatial distance check: skip obstacles not near the player
+      if (Math.abs(b.x - finalX) > b.hx + r + 1.0 || Math.abs(b.z - finalZ) > b.hz + r + 1.0) {
+        continue;
+      }
+
       const minY = b.y - b.hy;
       const maxY = b.y + b.hy;
 
