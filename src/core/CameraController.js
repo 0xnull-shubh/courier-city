@@ -46,7 +46,7 @@ export class CameraController {
 
   initInputListeners() {
     window.addEventListener('mousedown', (e) => {
-      if (e.target.tagName === 'CANVAS') {
+      if (e.target === this.domElement) {
         this.isDragging = true;
         this.lastMouseX = e.clientX;
         this.lastMouseY = e.clientY;

@@ -280,7 +280,7 @@ export class Vehicle {
       }
 
       // Steering: sharp, responsive arcade steering
-      const targetSteer = -turnInput * this.maxSteerAngle;
+      const targetSteer = turnInput * this.maxSteerAngle;
       this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, dt * 18);
 
       // Always allow steering if the car has any throttle/brake input or motion!

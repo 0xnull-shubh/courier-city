@@ -285,7 +285,7 @@ export class BmtcBus {
       }
 
       // Steering: responsive bus transit steering
-      const targetSteer = turnInput * this.maxSteerAngle;
+      const targetSteer = -turnInput * this.maxSteerAngle;
       this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, dt * 14);
 
       const effectiveSpeed = Math.max(Math.abs(this.currentSpeed), (throttle !== 0) ? 2.5 : 0);

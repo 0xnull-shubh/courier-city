@@ -254,7 +254,7 @@ export class Motorbike {
       }
 
       // Steering & Handlebars: responsive Bullet motorbike cornering
-      const targetSteer = turnInput * this.maxSteerAngle;
+      const targetSteer = -turnInput * this.maxSteerAngle;
       this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, dt * 22);
       if (this.frontFork) {
         this.frontFork.rotation.y = this.steerAngle;

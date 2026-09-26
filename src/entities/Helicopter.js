@@ -183,7 +183,7 @@ export class Helicopter {
         const targetRoll = -turn * 0.28;
         this.roll += (targetRoll - this.roll) * Math.min(1, dt * 4);
 
-        this.yaw -= turn * 1.8 * dt;
+        this.yaw += turn * 1.8 * dt;
 
         const maxSpd = boost ? this.maxSpeed * 1.3 : this.maxSpeed;
         if (Math.abs(fwd) > 0.01) {

@@ -28,7 +28,8 @@ export class PhysicsWorld {
   }
 
   step(dt) {
-    this.world.step(1 / 60, dt, 3);
+    const clampedDt = Math.min(dt, 0.033);
+    this.world.step(1 / 60, clampedDt, 1);
   }
 
   addStaticBox(x, y, z, hx, hy, hz, isRamp = false, isPillar = false, isTree = false) {

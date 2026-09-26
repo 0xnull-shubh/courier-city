@@ -353,7 +353,7 @@ export class AutoRickshaw {
       }
 
       // Steering & Fork Pivot: agile Bengaluru 3-wheeler turning
-      const targetSteer = turnInput * this.maxSteerAngle;
+      const targetSteer = -turnInput * this.maxSteerAngle;
       this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, dt * 20);
       if (this.frontFork) {
         this.frontFork.rotation.y = this.steerAngle;

@@ -120,11 +120,38 @@ export class FullMapOverlay {
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyM') {
         this.toggle();
+      } else if (e.code === 'Escape' && this.isOpen) {
+        this.toggle(false);
       }
     });
 
     const closeBtn = document.getElementById('close-map-btn');
-    if (closeBtn) closeBtn.addEventListener('click', () => this.toggle(false));
+    if (closeBtn) {
+      const handleClose = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        this.toggle(false);
+      };
+      closeBtn.addEventListener('click', handleClose);
+      closeBtn.addEventListener('pointerdown', handleClose);
+      closeBtn.addEventListener('touchend', handleClose);
+    }
+
+    // Close on backdrop click (outside modal card)
+    if (this.overlay) {
+      this.overlay.addEventListener('click', (e) => {
+        if (e.target === this.overlay) {
+          this.toggle(false);
+        }
+      });
+      this.overlay.addEventListener('touchend', (e) => {
+        if (e.target === this.overlay) {
+          this.toggle(false);
+        }
+      });
+    }
 
     // Card buttons
     const spawnBtn = document.getElementById('card-spawn-btn');

@@ -393,7 +393,7 @@ export class BrunoToyCar {
       }
 
       // 2. Smooth, sharp, responsive arcade steering
-      const targetSteer = -turnInput * this.maxSteerAngle;
+      const targetSteer = turnInput * this.maxSteerAngle;
       this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, dt * 20.0);
 
       const isTryingToMove = (input.isDown('KeyW') || input.isDown('ArrowUp') || input.isDown('KeyS') || input.isDown('ArrowDown'));

@@ -3368,7 +3368,6 @@ export class CityBuilder {
 
     const crown2 = new THREE.Mesh(new THREE.SphereGeometry(1.8, 7, 7), this.materials.oakLeaf);
     crown2.position.set(0.6, 6.2, 0.3);
-    crown2.castShadow = true;
     group.add(crown2);
 
     this.scene.add(group);
@@ -3395,7 +3394,6 @@ export class CityBuilder {
 
     const crownTop = new THREE.Mesh(new THREE.DodecahedronGeometry(1.6, 1), this.materials.mapleLeafTop);
     crownTop.position.set(0.3, 6.0, -0.2);
-    crownTop.castShadow = true;
     group.add(crownTop);
 
     this.scene.add(group);
@@ -3424,7 +3422,6 @@ export class CityBuilder {
 
     const c2 = new THREE.Mesh(new THREE.SphereGeometry(1.6, 7, 7), this.materials.sakuraLeaf2);
     c2.position.set(-0.4, 5.5, 0.4);
-    c2.castShadow = true;
     group.add(c2);
 
     this.scene.add(group);
@@ -3451,12 +3448,10 @@ export class CityBuilder {
 
     const tier2 = new THREE.Mesh(new THREE.ConeGeometry(1.8, 2.8, 7), this.materials.pineLeaf);
     tier2.position.y = 6.2;
-    tier2.castShadow = true;
     group.add(tier2);
 
     const tier3 = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.2, 7), this.materials.pineLeaf);
     tier3.position.y = 7.8;
-    tier3.castShadow = true;
     group.add(tier3);
 
     this.scene.add(group);

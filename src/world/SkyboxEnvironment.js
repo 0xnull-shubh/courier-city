@@ -128,7 +128,7 @@ export class SkyboxEnvironment {
       this.sunLight.target.position.set(targetPos.x, targetPos.y, targetPos.z);
       this.sunLight.target.updateMatrixWorld();
       this.lastShadowPos.copy(targetPos);
-    } else if (targetPos.distanceToSquared(this.lastShadowPos) > 2.25) {
+    } else if (targetPos.distanceToSquared(this.lastShadowPos) > 64.0) {
       this.sunLight.position.set(targetPos.x + 45, targetPos.y + 65, targetPos.z + 38);
       this.sunLight.target.position.set(targetPos.x, targetPos.y, targetPos.z);
       this.sunLight.target.updateMatrixWorld();

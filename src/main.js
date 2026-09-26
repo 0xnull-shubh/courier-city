@@ -282,7 +282,7 @@ class Game {
 
     // Direct Click on Car, Plane, or Helicopter to Enter
     window.addEventListener('click', (e) => {
-      if (e.target.closest('.messenger-header, .messenger-actions, .bottom-hint, #radar-container, #gps-nav-widget, #full-map-overlay, #welcome-landing-modal, .welcome-modal-overlay, .welcome-card, #camera-modal, .camera-card')) {
+      if (this.isAnyModalOpen() || e.target.closest('.messenger-header, .messenger-actions, .bottom-hint, #radar-container, #gps-nav-widget, #full-map-overlay, #welcome-landing-modal, .welcome-modal-overlay, .welcome-card, #camera-modal, .camera-card, #controls-modal, .controls-card')) {
         return;
       }
 
@@ -389,12 +389,26 @@ class Game {
 
     this.toggleCameraModal = toggleCameraModal;
 
-    if (openBtn) openBtn.addEventListener('click', () => toggleCameraModal(true));
-    if (closeBtn) closeBtn.addEventListener('click', () => toggleCameraModal(false));
-    if (doneBtn) doneBtn.addEventListener('click', () => {
+    const handleCloseCamera = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       toggleCameraModal(false);
-      this.hud.showToast('Camera settings applied');
-    });
+    };
+
+    if (openBtn) openBtn.addEventListener('click', () => toggleCameraModal(true));
+    if (closeBtn) {
+      closeBtn.addEventListener('click', handleCloseCamera);
+      closeBtn.addEventListener('pointerdown', handleCloseCamera);
+      closeBtn.addEventListener('touchend', handleCloseCamera);
+    }
+    if (doneBtn) {
+      doneBtn.addEventListener('click', () => {
+        handleCloseCamera();
+        this.hud.showToast('Camera settings applied');
+      });
+    }
 
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
@@ -465,13 +479,27 @@ class Game {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) toggleCameraModal(false);
       });
+      modal.addEventListener('touchend', (e) => {
+        if (e.target === modal) toggleCameraModal(false);
+      });
     }
 
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyV' && !e.target.closest('input, textarea')) {
         toggleCameraModal();
+      } else if (e.code === 'Escape' && isOpen) {
+        toggleCameraModal(false);
       }
     });
+  }
+
+  isAnyModalOpen() {
+    return (
+      (this.fullMapOverlay && this.fullMapOverlay.isOpen) ||
+      (this.hud && this.hud.isControlsOpen) ||
+      document.getElementById('welcome-landing-modal') !== null ||
+      !document.getElementById('camera-modal')?.classList.contains('camera-modal-hidden')
+    );
   }
 
   spawnPlayerAt(worldX, worldZ) {
@@ -869,12 +897,13 @@ class Game {
     this.handleObservationElevators();
     this.updateWaypointAnimation(dt, currentTime);
 
+    const activeInput = this.isAnyModalOpen() ? (this.idleInput || (this.idleInput = { isDown: () => false, getForward: () => 0, getTurn: () => 0, isSprinting: () => false, isJumping: () => false })) : this.input;
     const cameraYaw = this.cameraController.yaw;
-    this.player.update(dt, this.input, cameraYaw, this.vehicles);
+    this.player.update(dt, activeInput, cameraYaw, this.vehicles);
 
     this.vehicles.forEach(veh => {
       const isCurrent = (veh === this.activeVehicle);
-      veh.update(dt, this.input, isCurrent);
+      veh.update(dt, activeInput, isCurrent);
     });
 
     this.bloodVfx.update(dt);
@@ -884,13 +913,14 @@ class Game {
     let activeYaw = this.player.rotation;
 
     if (this.isRidingMetro && this.metroSystem) {
-      // Metro riding – use metro position
-      const metroPos = new THREE.Vector3(
+      // Metro riding – reuse scratch vector to eliminate per-frame GC allocations
+      if (!this._metroPos) this._metroPos = new THREE.Vector3();
+      this._metroPos.set(
         this.metroSystem.trackX,
         this.metroSystem.trainY + 2.5,
         this.metroSystem.currentZ
       );
-      activePos = metroPos;
+      activePos = this._metroPos;
       activeYaw = 0;
       this.cameraController.update(dt, metroPos, 0, Math.round(this.metroSystem.currentSpeed * 3.6), true);
       this.hud.updateSpeed(Math.round(this.metroSystem.currentSpeed * 3.6));
