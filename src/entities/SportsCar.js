@@ -529,30 +529,12 @@ export class SportsCar {
       this.wheelMeshes.push(wheelGroup);
     });
 
-    // Dual Forward Spotlights for Night Driving
-    this.leftSpot = new THREE.SpotLight(0xffffff, 0, 75, Math.PI / 5, 0.25);
-    this.leftSpot.position.set(-0.75, 0.55, 2.3);
-    this.leftSpotTarget = new THREE.Object3D();
-    this.leftSpotTarget.position.set(-0.75, 0.1, 35);
-    this.mesh.add(this.leftSpot, this.leftSpotTarget);
-    this.leftSpot.target = this.leftSpotTarget;
-
-    this.rightSpot = new THREE.SpotLight(0xffffff, 0, 75, Math.PI / 5, 0.25);
-    this.rightSpot.position.set(0.75, 0.55, 2.3);
-    this.rightSpotTarget = new THREE.Object3D();
-    this.rightSpotTarget.position.set(0.75, 0.1, 35);
-    this.mesh.add(this.rightSpot, this.rightSpotTarget);
-    this.rightSpot.target = this.rightSpotTarget;
-
     this.mesh.userData = { vehicle: this };
     this.scene.add(this.mesh);
   }
 
   setHeadlights(on) {
     this.headlightsOn = on;
-    const intensity = on ? 4.5 : 0;
-    this.leftSpot.intensity = intensity;
-    this.rightSpot.intensity = intensity;
   }
 
   update(dt, input, isPlayerControlling) {
@@ -565,7 +547,8 @@ export class SportsCar {
       const boost = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
 
       const throttle = forward - reverse;
-      const turnInput = steerLeft - steerRight;
+      // D / ArrowRight = +1 (Turn Right), A / ArrowLeft = -1 (Turn Left)
+      const turnInput = steerRight - steerLeft;
 
       const currentMax = boost ? this.boostMaxSpeed : this.maxSpeed;
 
@@ -594,8 +577,8 @@ export class SportsCar {
         this.currentSpeed *= Math.max(0, 1 - 2.5 * dt);
       }
 
-      // Steering: razor-sharp supercar handling
-      const targetSteer = -turnInput * this.maxSteerAngle;
+      // Steering: razor-sharp supercar handling (Right = +steer, Left = -steer)
+      const targetSteer = turnInput * this.maxSteerAngle;
       this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1, dt * 22);
 
       const effectiveSpeed = Math.max(Math.abs(this.currentSpeed), (throttle !== 0) ? 3.0 : 0);
@@ -611,9 +594,9 @@ export class SportsCar {
       const proposedX = this.position.x + fwdX * this.currentSpeed * dt;
       const proposedZ = this.position.z + fwdZ * this.currentSpeed * dt;
 
-      // Surface height check
+      // Surface height check: road level is at 0.04m to sit tires firmly on asphalt
       const surfaceHeight = this.physicsWorld.getSurfaceHeight ? this.physicsWorld.getSurfaceHeight(proposedX, proposedZ, this.position.y) : 0;
-      this.position.y = surfaceHeight;
+      this.position.y = Math.max(0.04, surfaceHeight);
       this.pitch *= Math.max(0, 1 - 6 * dt);
 
       // Collision avoidance with obstacles

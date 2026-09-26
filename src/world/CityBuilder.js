@@ -2366,12 +2366,12 @@ export class CityBuilder {
       cabin.position.set(wx, 13.6, 32);
       armyGroup.add(cabin);
 
-      // Searchlight on sentry tower
-      const searchlight = new THREE.SpotLight(0xfef08a, 3.0, 50, Math.PI / 5, 0.4);
-      searchlight.position.set(wx, 14, 32);
-      searchlight.target.position.set(wx, 0, 10);
-      armyGroup.add(searchlight);
-      armyGroup.add(searchlight.target);
+      // Searchlight lantern lens on sentry tower (emissive mesh, zero dynamic light uniform overhead)
+      const lanternMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+      const searchlightLens = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.4, 12), lanternMat);
+      searchlightLens.position.set(wx, 14, 32);
+      searchlightLens.rotation.x = Math.PI / 4;
+      armyGroup.add(searchlightLens);
     });
 
     // 2. Army Garrison Command & Barracks Building (50m wide x 15m tall x 22m deep)

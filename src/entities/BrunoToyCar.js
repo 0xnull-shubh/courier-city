@@ -444,14 +444,15 @@ export class BrunoToyCar {
         this.verticalVelocity -= this.gravity * dt;
         this.position.y += this.verticalVelocity * dt;
 
-        if (this.position.y <= surfaceHeight) {
-          this.position.y = surfaceHeight;
+        const roadFloor = Math.max(0.04, surfaceHeight);
+        if (this.position.y <= roadFloor) {
+          this.position.y = roadFloor;
           this.verticalVelocity = 0;
           this.isAirborne = false;
           this.pitch = 0;
         }
       } else {
-        this.position.y = surfaceHeight;
+        this.position.y = Math.max(0.04, surfaceHeight);
         this.pitch *= Math.max(0, 1 - 6 * dt);
       }
 

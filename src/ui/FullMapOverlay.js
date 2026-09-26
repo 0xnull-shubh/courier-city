@@ -366,7 +366,16 @@ export class FullMapOverlay {
     ctx.strokeRect(cx + 340 * scale, 0, 80 * scale, h);
 
     // 3. Arterial 6-Lane Grand Highways (Central Spine & Ring Roads, 38m wide)
-    ctx.fillStyle = '#334155';
+    ctx.fillStyle = '#1e293b'; // Road casing/border
+    ctx.fillRect(cx - 20 * scale, 0, 40 * scale, h);
+    ctx.fillRect(0, cy - 20 * scale, w, 40 * scale);
+
+    [-200, 200].forEach(c => {
+      ctx.fillRect(cx + (c - 20) * scale, 0, 40 * scale, h);
+      ctx.fillRect(0, cy + (c - 20) * scale, w, 40 * scale);
+    });
+
+    ctx.fillStyle = '#334155'; // Clean modern asphalt
     ctx.fillRect(cx - 19 * scale, 0, 38 * scale, h); // N-S Central Expressway
     ctx.fillRect(0, cy - 19 * scale, w, 38 * scale); // E-W Boulevard
 
@@ -375,39 +384,155 @@ export class FullMapOverlay {
       ctx.fillRect(0, cy + (c - 19) * scale, w, 38 * scale);
     });
 
-    // Spacious Multi-Lane Roundabouts (Radius 48m)
+    // Spacious Multi-Lane Roundabouts (Radius 48m with 6-lane circular flow)
     [-200, 0, 200].forEach(rx => {
       [-200, 0, 200].forEach(rz => {
+        // Outer roadbed
         ctx.beginPath();
         ctx.arc(cx + rx * scale, cy + rz * scale, 48 * scale, 0, Math.PI * 2);
         ctx.fillStyle = '#334155';
         ctx.fill();
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Roundabout concentric lane dashes
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
         ctx.beginPath();
-        ctx.arc(cx + rx * scale, cy + rz * scale, 12 * scale, 0, Math.PI * 2);
-        ctx.fillStyle = '#15803d'; // Central green island
+        ctx.arc(cx + rx * scale, cy + rz * scale, 36 * scale, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx + rx * scale, cy + rz * scale, 24 * scale, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Central landscaped green island
+        ctx.beginPath();
+        ctx.arc(cx + rx * scale, cy + rz * scale, 14 * scale, 0, Math.PI * 2);
+        ctx.fillStyle = '#15803d';
         ctx.fill();
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
       });
     });
 
-    // Highway yellow centerlines
+    // 6-Lane Sub-divider Dashes (2 white dashed lines per direction)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 6]);
+    [-12.5, -6.5, 6.5, 12.5].forEach(offset => {
+      ctx.beginPath();
+      ctx.moveTo(cx + offset * scale, 0); ctx.lineTo(cx + offset * scale, h);
+      ctx.moveTo(0, cy + offset * scale); ctx.lineTo(w, cy + offset * scale);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    // Highway Double Yellow Centerlines
     ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 1.5;
-    ctx.setLineDash([8, 6]);
     ctx.beginPath();
-    ctx.moveTo(cx, 0); ctx.lineTo(cx, h);
-    ctx.moveTo(0, cy); ctx.lineTo(w, cy);
+    ctx.moveTo(cx - 0.7 * scale, 0); ctx.lineTo(cx - 0.7 * scale, h);
+    ctx.moveTo(cx + 0.7 * scale, 0); ctx.lineTo(cx + 0.7 * scale, h);
+    ctx.moveTo(0, cy - 0.7 * scale); ctx.lineTo(w, cy - 0.7 * scale);
+    ctx.moveTo(0, cy + 0.7 * scale); ctx.lineTo(w, cy + 0.7 * scale);
+    ctx.stroke();
+
+    // 3b. Realistic Elevated Flyovers & Bridges
+    // A. Silk Board - Central Expressway Elevated 6-Lane Flyover Deck
+    const flyoverW = 26 * scale;
+    const flyoverY1 = cy - 110 * scale;
+    const flyoverH = 220 * scale;
+
+    // Flyover deep ambient drop shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+    ctx.fillRect(cx - flyoverW / 2 + 5, flyoverY1 + 5, flyoverW, flyoverH);
+
+    // Elevated concrete deck
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(cx - flyoverW / 2, flyoverY1, flyoverW, flyoverH);
+
+    // High-visibility concrete parapets / guardrails
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - flyoverW / 2, flyoverY1); ctx.lineTo(cx - flyoverW / 2, flyoverY1 + flyoverH);
+    ctx.moveTo(cx + flyoverW / 2, flyoverY1); ctx.lineTo(cx + flyoverW / 2, flyoverY1 + flyoverH);
+    ctx.stroke();
+
+    // Flyover center dashed yellow line
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.moveTo(cx, flyoverY1); ctx.lineTo(cx, flyoverY1 + flyoverH);
     ctx.stroke();
     ctx.setLineDash([]);
 
+    // North & South Climbing Ramps (Striped gradient)
+    [-1, 1].forEach(side => {
+      const rampY = side === -1 ? flyoverY1 - 40 * scale : flyoverY1 + flyoverH;
+      const rampH = 40 * scale;
+      ctx.fillStyle = side === -1 ? '#475569' : '#475569';
+      ctx.fillRect(cx - flyoverW / 2, rampY, flyoverW, rampH);
+
+      // Ramp chevrons
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(cx - flyoverW / 2, rampY, flyoverW, rampH);
+      ctx.setLineDash([]);
+    });
+
+    // Flyover Badge Label
+    ctx.fillStyle = '#0284c7';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚡ ELEVATED FLYOVER', cx, cy - 2);
+
+    // B. River Grand Suspension Bridge (at x = 380, z = 80)
+    const brX = cx + (380 - 45) * scale;
+    const brY = cy + (80 - 10) * scale;
+    const brW = 90 * scale;
+    const brH = 20 * scale;
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillRect(brX + 4, brY + 4, brW, brH);
+
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(brX, brY, brW, brH);
+
+    // Red suspension towers
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(brX + 16 * scale, brY - 3 * scale, 5 * scale, brH + 6 * scale);
+    ctx.fillRect(brX + brW - 21 * scale, brY - 3 * scale, 5 * scale, brH + 6 * scale);
+
+    // Cable strings
+    ctx.strokeStyle = '#f8fafc';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(brX, brY + brH / 2);
+    ctx.lineTo(brX + 18 * scale, brY - 2 * scale);
+    ctx.lineTo(brX + brW / 2, brY + brH / 2);
+    ctx.lineTo(brX + brW - 19 * scale, brY - 2 * scale);
+    ctx.lineTo(brX + brW, brY + brH / 2);
+    ctx.stroke();
+
     // 4. BDA Public Parks
-    ctx.fillStyle = 'rgba(34, 197, 94, 0.35)';
+    ctx.fillStyle = 'rgba(34, 197, 94, 0.45)';
     ctx.fillRect(cx + (80 - 35) * scale, cy + (40 - 30) * scale, 70 * scale, 60 * scale);   // HSR Park
     ctx.fillRect(cx + (-140 - 32) * scale, cy + (60 - 27) * scale, 65 * scale, 55 * scale); // Koramangala Park
     ctx.fillRect(cx + (120 - 30) * scale, cy + (-60 - 25) * scale, 60 * scale, 50 * scale); // Indiranagar Park
 
     // 5. Namma Metro Elevated Viaduct Corridor (Green Line) at x = 32
-    ctx.fillStyle = '#10b981';
-    ctx.fillRect(cx + (32 - 3) * scale, cy - 60 * scale, 6 * scale, 320 * scale);
+    ctx.fillStyle = '#059669';
+    ctx.fillRect(cx + (32 - 4) * scale, cy - 60 * scale, 8 * scale, 320 * scale);
+    ctx.strokeStyle = '#34d399';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx + (32 - 4) * scale, cy - 60 * scale, 8 * scale, 320 * scale);
 
     // 6. Airport Runway
     ctx.fillStyle = '#1e293b';

@@ -76,6 +76,7 @@ class Game {
     this.physicsWorld = new PhysicsWorld();
     this.input = new Input();
     this.cameraController = new CameraController(this.camera, this.canvas);
+    this.cameraController.setPhysicsWorld(this.physicsWorld);
     this.audioManager = new AudioManager();
     this.bloodVfx = new BloodVFX(this.scene);
     this.environment = new SkyboxEnvironment(this.scene, this.renderer);
@@ -98,8 +99,12 @@ class Game {
     // 2. Comprehensive High-Performance, Exotic & City Vehicle Fleet
     this.vehicles = [];
 
-    // 2a. Flagship Bruno Simon Toy Roadster (Center of Central Plaza)
-    this.brunoCar = new BrunoToyCar(this.scene, this.physicsWorld, this.audioManager, new THREE.Vector3(0, 0, 76), 0xef4444);
+    // 2a. Premier Bugatti Veyron 16.4 Supercar (Flagship Starter Car directly in front of Player)
+    this.starterSupercar = new SportsCar(this.scene, this.physicsWorld, this.audioManager, new THREE.Vector3(0, 0.04, 76), 'BUGATTI_VEYRON');
+    this.vehicles.push(this.starterSupercar);
+
+    // Also place the classic Bruno Toy Car at the off-road fun park
+    this.brunoCar = new BrunoToyCar(this.scene, this.physicsWorld, this.audioManager, new THREE.Vector3(45, 0.04, 95), 0xef4444);
     this.vehicles.push(this.brunoCar);
 
     // 2b. Realistic Exotic Supercars & 4x4 Beasts (Bugatti, Aston Martin, AMG GT, Lamborghini Aventador, Porsche 911 GT3 RS, Mahindra Thar)
@@ -531,7 +536,11 @@ class Game {
       }
     }
 
-    const safeLandingY = Math.max(0, surfaceY) + 1.2;
+    finalX = Math.max(-460, Math.min(460, finalX));
+    finalZ = Math.max(-460, Math.min(460, finalZ));
+    const safeLandingY = Math.max(0.04, surfaceY);
+
+    let activeYaw = 0;
 
     if (this.player.isDriving && this.activeVehicle) {
       // Teleport the vehicle and player together
@@ -563,6 +572,7 @@ class Game {
         this.player.group.position.set(finalX, safeLandingY, finalZ);
       }
 
+      activeYaw = veh.yaw || 0;
       const vehName = veh.carName || (veh.isBrunoToyCar ? 'Bruno Toy Roadster' : (veh.isSportsCar ? 'Supercar' : 'Vehicle'));
       this.hud.showToast(`⚡ Landed ${vehName} at (${Math.round(finalX)}, ${Math.round(finalZ)})!`);
     } else {
@@ -573,17 +583,18 @@ class Game {
       if (this.player.group) {
         this.player.group.position.set(finalX, safeLandingY, finalZ);
       }
+      activeYaw = this.player.rotation || 0;
       this.hud.showToast(`⚡ Landed character at (${Math.round(finalX)}, ${Math.round(finalZ)})!`);
     }
 
-    // 2. Instantly reset camera tracking to destination coordinates
+    // 2. Instantly reset camera tracking to destination coordinates without lag or blank screen
     const targetPos = this.player.isDriving && this.activeVehicle
       ? this.activeVehicle.position
       : this.player.position;
 
     if (this.cameraController) {
       if (typeof this.cameraController.resetToTarget === 'function') {
-        this.cameraController.resetToTarget(targetPos);
+        this.cameraController.resetToTarget(targetPos, activeYaw);
       } else {
         this.cameraController.camera.position.set(targetPos.x, targetPos.y + 12, targetPos.z + 16);
         this.cameraController.camera.lookAt(targetPos);
@@ -883,8 +894,12 @@ class Game {
     if (this.skidSystem) this.skidSystem.update(dt);
 
     // Traffic and crowd must update every frame for smooth movement
+    const activePlayerPos = (this.player.isDriving && this.activeVehicle) ? this.activeVehicle.position : this.player.position;
     this.trafficSystem.update(dt, this.activeVehicle, this.player);
-    this.crowdSystem.update(dt);
+    this.crowdSystem.update(dt, activePlayerPos);
+    if (this.player.isDriving && this.activeVehicle) {
+      this.crowdSystem.checkVehicleCollisions(this.activeVehicle, this.bloodVfx, this.hud, this.audioManager);
+    }
     this.metroSystem.update(dt);
 
     // Throttle distant/decorative systems to every other frame
@@ -903,7 +918,10 @@ class Game {
 
     this.vehicles.forEach(veh => {
       const isCurrent = (veh === this.activeVehicle);
-      veh.update(dt, activeInput, isCurrent);
+      // Skip heavy collision & suspension loops for stationary parked cars
+      if (isCurrent || veh.isTrafficCar || Math.abs(veh.currentSpeed || 0) > 0.05 || veh.isAirborne) {
+        veh.update(dt, activeInput, isCurrent);
+      }
     });
 
     this.bloodVfx.update(dt);
@@ -922,7 +940,7 @@ class Game {
       );
       activePos = this._metroPos;
       activeYaw = 0;
-      this.cameraController.update(dt, metroPos, 0, Math.round(this.metroSystem.currentSpeed * 3.6), true);
+      this.cameraController.update(dt, activePos, 0, Math.round(this.metroSystem.currentSpeed * 3.6), true);
       this.hud.updateSpeed(Math.round(this.metroSystem.currentSpeed * 3.6));
     } else {
       if (this.player.isDriving && this.activeVehicle) {
