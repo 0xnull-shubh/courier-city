@@ -80,8 +80,8 @@
       <button id="toggle-map-btn" class="subtle-btn" title="Open Map [M]">
         <span>🗺️ Map</span>
       </button>
-      <button id="toggle-view-btn" class="subtle-btn" title="Toggle Camera View [V]">
-        <span id="view-mode-label" class="view-mode-label">Chase</span>
+      <button id="toggle-camera-modal-btn" class="subtle-btn" title="Customize Camera View [V]">
+        <span>📷 Camera</span>
       </button>
       <span class="time-label" id="clock-display">00:00</span>
       <button id="toggle-time-btn" class="subtle-btn" title="Toggle Day/Night Ambience">
@@ -100,14 +100,86 @@
       <span class="speed-unit">km/h</span>
     </div>
 
-    <!-- Minimal Radar in corner -->
-    <div id="radar-container">
-      <canvas id="radar-canvas" width="110" height="110"></canvas>
-      <div class="radar-center-dot"></div>
+    <!-- Realistic 3D Globe Minimap Widget in Corner -->
+    <div id="radar-container" class="globe-minimap-widget" title="Click to open Globe Satellite Map [M]">
+      <canvas id="radar-canvas" width="130" height="130"></canvas>
+      <div class="globe-tap-hint">🌍 BENGALURU GLOBE &bull; TAP TO OPEN</div>
     </div>
 
     <!-- Minimal toast message -->
     <div id="toast-message">Explore the city, visit the Zoo, or fly at the Airport!</div>
+
+    <!-- Camera View Customizer Modal -->
+    <div id="camera-modal" class="camera-modal-hidden">
+      <div class="camera-card">
+        <div class="camera-header">
+          <div class="camera-title-group">
+            <span class="camera-badge">📷 VIEW CUSTOMIZER</span>
+            <h3>Camera Angle & Perspective</h3>
+          </div>
+          <button id="close-camera-btn" class="camera-close-btn">&times;</button>
+        </div>
+
+        <div class="camera-presets-section">
+          <div class="section-label">Select View Preset</div>
+          <div class="camera-presets-grid">
+            <button class="cam-preset-btn active" data-preset="diorama">🏎️ Diorama Follow</button>
+            <button class="cam-preset-btn" data-preset="isometric">📐 3/4 Isometric</button>
+            <button class="cam-preset-btn" data-preset="closeChase">🚗 Close Action</button>
+            <button class="cam-preset-btn" data-preset="topDown">🦅 Top-Down</button>
+            <button class="cam-preset-btn" data-preset="cockpit">🎥 Hood / Low</button>
+            <button class="cam-preset-btn" data-preset="free">🕹️ Free Orbit</button>
+          </div>
+        </div>
+
+        <div class="camera-sliders-group">
+          <div class="cam-slider-row">
+            <div class="cam-slider-label">
+              <span>📏 Distance / Zoom</span>
+              <span id="cam-dist-val" class="cam-val-badge">16m</span>
+            </div>
+            <input type="range" id="cam-dist-slider" min="6" max="50" step="1" value="16">
+          </div>
+
+          <div class="cam-slider-row">
+            <div class="cam-slider-label">
+              <span>📐 Pitch / Angle</span>
+              <span id="cam-pitch-val" class="cam-val-badge">47°</span>
+            </div>
+            <input type="range" id="cam-pitch-slider" min="15" max="85" step="1" value="47">
+          </div>
+
+          <div class="cam-slider-row">
+            <div class="cam-slider-label">
+              <span>⬆️ Height Offset</span>
+              <span id="cam-height-val" class="cam-val-badge">2.0m</span>
+            </div>
+            <input type="range" id="cam-height-slider" min="0.5" max="8" step="0.5" value="2.0">
+          </div>
+
+          <div class="cam-slider-row">
+            <div class="cam-slider-label">
+              <span>👁️ Lens FOV</span>
+              <span id="cam-fov-val" class="cam-val-badge">38°</span>
+            </div>
+            <input type="range" id="cam-fov-slider" min="25" max="75" step="1" value="38">
+          </div>
+
+          <div class="cam-slider-row">
+            <div class="cam-slider-label">
+              <span>⚡ Damping Smoothness</span>
+              <span id="cam-smooth-val" class="cam-val-badge">Smooth (11)</span>
+            </div>
+            <input type="range" id="cam-smooth-slider" min="4" max="25" step="1" value="11">
+          </div>
+        </div>
+
+        <div class="camera-footer">
+          <button id="cam-reset-btn" class="cam-reset-btn">🔄 Reset to Bruno Simon Default</button>
+          <button id="cam-done-btn" class="cam-done-btn">✓ Save & Apply</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Dropdown / Collapsible Controls Modal -->
     <div id="controls-modal" class="controls-modal-hidden">

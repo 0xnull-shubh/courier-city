@@ -36,6 +36,9 @@ export class FullMapOverlay {
 
     // Default target: Vidhana Soudha!
     this.gpsTarget = this.landmarks.find(l => l.id === 'vidhana') || this.landmarks[0];
+    this.selectedTarget = null;
+    this.lastTapTime = 0;
+    this.lastTapCoords = { x: 0, y: 0 };
 
     this.createDom();
     this.initEvents();
@@ -50,17 +53,34 @@ export class FullMapOverlay {
       <div class="map-modal">
         <div class="map-header">
           <div class="map-title-group">
-            <span class="map-badge">NAMMA BENGALURU GPS</span>
-            <h2>Interactive City Navigation Map</h2>
+            <span class="map-badge">🌍 BENGALURU GLOBE MAP</span>
+            <h2>Interactive City Satellite & Landmark Navigation</h2>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <button id="close-map-btn" class="map-close-btn">&times;</button>
+            <div class="map-double-tap-pill">⚡ Double-Tap anywhere to Spawn / Land</div>
+            <button id="close-map-btn" class="map-close-btn" title="Close Map">&times;</button>
           </div>
         </div>
 
         <div class="map-canvas-wrapper">
-          <canvas id="fullscreen-map-canvas" width="760" height="760"></canvas>
-          <div id="map-tooltip" class="map-tooltip hidden"></div>
+          <canvas id="fullscreen-map-canvas" width="800" height="800"></canvas>
+          
+          <!-- Floating Action Bubble on tap -->
+          <div id="map-action-card" class="map-action-card hidden">
+            <div class="card-header">
+              <span id="card-icon" class="card-icon">📍</span>
+              <div class="card-titles">
+                <h4 id="card-title">Vidhana Soudha</h4>
+                <span id="card-coords" class="card-coords">(-240, -40) &bull; 180m away</span>
+              </div>
+            </div>
+            <p id="card-desc" class="card-desc">Karnataka State Legislature dome.</p>
+            <div class="card-btn-row">
+              <button id="card-spawn-btn" class="card-btn card-spawn-btn">⚡ Spawn & Land Here</button>
+              <button id="card-gps-btn" class="card-btn card-gps-btn">🎯 Set GPS Route</button>
+            </div>
+            <div class="card-tip">⚡ Quick Tip: Double-tap anywhere to teleport instantly!</div>
+          </div>
         </div>
 
         <div class="map-footer">
@@ -71,7 +91,7 @@ export class FullMapOverlay {
             <span><span class="legend-dot" style="background:#f97316;"></span> 🇮🇳 Flag</span>
             <span><span class="legend-dot" style="background:#0284c7;"></span> 🛩️ IAF HQ</span>
             <span><span class="legend-dot" style="background:#15803d;"></span> 🎖️ Army HQ</span>
-            <span><span class="legend-dot" style="background:#d97706;"></span> 🛕 Someshwara Temple</span>
+            <span><span class="legend-dot" style="background:#d97706;"></span> 🛕 Temple</span>
             <span><span class="legend-dot" style="background:#78350f;"></span> 🐂 Bull Temple</span>
             <span><span class="legend-dot" style="background:#991b1b;"></span> 🎓 BMS College</span>
             <span><span class="legend-dot" style="background:#16a34a;"></span> 🌳 BDA Parks</span>
@@ -84,7 +104,7 @@ export class FullMapOverlay {
             <span><span class="legend-dot" style="background:#991b1b;"></span> 🏛️ Russell Market</span>
           </div>
           <div class="map-hint" style="font-weight: 600; color: #0284c7;">
-            🎯 Tap ANYWHERE or on any landmark to set GPS directions on your Minimap &middot; Press <kbd>M</kbd> to return to driving
+            ⚡ <strong>DOUBLE-TAP ANYWHERE</strong> to teleport & land with your vehicle &middot; Tap once to inspect or set GPS route
           </div>
         </div>
       </div>
@@ -93,6 +113,7 @@ export class FullMapOverlay {
     document.body.appendChild(this.overlay);
     this.canvas = document.getElementById('fullscreen-map-canvas');
     this.ctx = this.canvas.getContext('2d');
+    this.actionCard = document.getElementById('map-action-card');
   }
 
   initEvents() {
@@ -105,65 +126,175 @@ export class FullMapOverlay {
     const closeBtn = document.getElementById('close-map-btn');
     if (closeBtn) closeBtn.addEventListener('click', () => this.toggle(false));
 
-    this.canvas.addEventListener('click', (e) => {
+    // Card buttons
+    const spawnBtn = document.getElementById('card-spawn-btn');
+    const gpsBtn = document.getElementById('card-gps-btn');
+
+    if (spawnBtn) {
+      spawnBtn.addEventListener('click', () => {
+        if (this.selectedTarget && this.game) {
+          this.executeSpawn(this.selectedTarget.x, this.selectedTarget.z);
+        }
+      });
+    }
+
+    if (gpsBtn) {
+      gpsBtn.addEventListener('click', () => {
+        if (this.selectedTarget) {
+          this.gpsTarget = this.selectedTarget;
+          if (this.game && this.game.onGpsTargetChanged) {
+            this.game.onGpsTargetChanged(this.gpsTarget);
+          }
+          if (this.game && this.game.hud) {
+            this.game.hud.showToast(`🎯 GPS Route set to ${this.selectedTarget.name}!`);
+          }
+          this.hideActionCard();
+          this.render();
+        }
+      });
+    }
+
+    // Handle Tap and Double-Tap
+    const handleMapTap = (clientX, clientY, isDoubleClick = false) => {
       const rect = this.canvas.getBoundingClientRect();
-      const clickX = (e.clientX - rect.left) * (this.canvas.width / rect.width);
-      const clickY = (e.clientY - rect.top) * (this.canvas.height / rect.height);
+      const clickX = (clientX - rect.left) * (this.canvas.width / rect.width);
+      const clickY = (clientY - rect.top) * (this.canvas.height / rect.height);
 
       const mapScale = this.canvas.width / 1300;
       const originX = this.canvas.width / 2;
       const originY = this.canvas.height / 2;
 
+      const worldX = Math.round((clickX - originX) / mapScale);
+      const worldZ = Math.round((clickY - originY) / mapScale);
+
+      // Check nearest landmark
       let nearestLandmark = null;
-      let minDistanceSq = 24 * 24;
+      let minDistanceSq = 28 * 28;
 
       for (const lm of this.landmarks) {
         const lx = originX + lm.x * mapScale;
         const ly = originY + lm.z * mapScale;
         const distSq = (clickX - lx) * (clickX - lx) + (clickY - ly) * (clickY - ly);
-
         if (distSq < minDistanceSq) {
           minDistanceSq = distSq;
           nearestLandmark = lm;
         }
       }
 
-      if (nearestLandmark) {
-        this.gpsTarget = nearestLandmark;
-        this.game.hud.showToast(`GPS Route set to ${nearestLandmark.name}! Following on Minimap.`);
-      } else {
-        // Clicked open ground / street -> Create Custom Waypoint Pin
-        const worldX = Math.round((clickX - originX) / mapScale);
-        const worldZ = Math.round((clickY - originY) / mapScale);
+      const spawnX = nearestLandmark ? nearestLandmark.x : worldX;
+      const spawnZ = nearestLandmark ? nearestLandmark.z : worldZ;
 
-        this.gpsTarget = {
-          id: 'custom_pin',
-          name: `📍 Custom Waypoint (${worldX}, ${worldZ})`,
-          x: worldX,
-          z: worldZ,
-          icon: '📍',
-          color: '#06b6d4',
-          desc: 'Custom GPS navigation waypoint'
-        };
-        this.game.hud.showToast(`GPS Waypoint set to (${worldX}, ${worldZ})! Follow the Minimap trail.`);
+      const now = performance.now();
+      const timeSinceLast = now - this.lastTapTime;
+      const distFromLast = Math.hypot(clientX - this.lastTapCoords.x, clientY - this.lastTapCoords.y);
+
+      // DOUBLE TAP TRIGGER!
+      if (isDoubleClick || (timeSinceLast < 380 && distFromLast < 35)) {
+        this.executeSpawn(spawnX, spawnZ);
+        this.lastTapTime = 0;
+        return;
       }
 
-      this.render();
+      this.lastTapTime = now;
+      this.lastTapCoords = { x: clientX, y: clientY };
 
-      // Notify game to update in-world 3D waypoint beacon
-      if (this.game && this.game.onGpsTargetChanged) {
-        this.game.onGpsTargetChanged(this.gpsTarget);
+      // Single Tap -> Show Action Card
+      const targetObj = nearestLandmark || {
+        id: 'custom_pin',
+        name: `📍 Custom Point (${worldX}, ${worldZ})`,
+        x: worldX,
+        z: worldZ,
+        icon: '📍',
+        color: '#06b6d4',
+        desc: 'Custom location in Bengaluru open world'
+      };
+
+      this.selectedTarget = targetObj;
+      this.showActionCard(clientX - rect.left, clientY - rect.top, targetObj);
+      this.render();
+    };
+
+    // Canvas click
+    this.canvas.addEventListener('click', (e) => {
+      handleMapTap(e.clientX, e.clientY, false);
+    });
+
+    // Double-click
+    this.canvas.addEventListener('dblclick', (e) => {
+      handleMapTap(e.clientX, e.clientY, true);
+    });
+
+    // Touch handling for mobile
+    let touchStartTime = 0;
+    this.canvas.addEventListener('touchstart', (e) => {
+      touchStartTime = performance.now();
+    }, { passive: true });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      if (e.changedTouches.length > 0) {
+        const t = e.changedTouches[0];
+        handleMapTap(t.clientX, t.clientY, false);
       }
     });
+  }
+
+  showActionCard(cssX, cssY, target) {
+    if (!this.actionCard) return;
+
+    const titleEl = document.getElementById('card-title');
+    const iconEl = document.getElementById('card-icon');
+    const coordsEl = document.getElementById('card-coords');
+    const descEl = document.getElementById('card-desc');
+
+    if (titleEl) titleEl.textContent = target.name;
+    if (iconEl) iconEl.textContent = target.icon || '📍';
+    if (descEl) descEl.textContent = target.desc || 'Tap to spawn or navigate to this location.';
+
+    if (coordsEl && this.game && this.game.player) {
+      const pPos = (this.game.player.isDriving && this.game.activeVehicle)
+        ? this.game.activeVehicle.position
+        : this.game.player.position;
+      const distM = Math.round(Math.hypot(target.x - pPos.x, target.z - pPos.z));
+      coordsEl.textContent = `Coordinates: (${target.x}, ${target.z}) &bull; ${distM}m away`;
+    }
+
+    // Keep card inside wrapper boundary
+    const wrapW = this.canvas.parentElement.clientWidth || 800;
+    const wrapH = this.canvas.parentElement.clientHeight || 800;
+    const cardW = 300;
+    const cardH = 175;
+
+    let posX = Math.max(16, Math.min(wrapW - cardW - 16, cssX - cardW / 2));
+    let posY = (cssY - cardH - 18 > 10) ? (cssY - cardH - 18) : (cssY + 22);
+
+    this.actionCard.style.left = `${posX}px`;
+    this.actionCard.style.top = `${posY}px`;
+    this.actionCard.classList.remove('hidden');
+  }
+
+  hideActionCard() {
+    if (this.actionCard) {
+      this.actionCard.classList.add('hidden');
+    }
+  }
+
+  executeSpawn(worldX, worldZ) {
+    if (this.game && typeof this.game.spawnPlayerAt === 'function') {
+      this.game.spawnPlayerAt(worldX, worldZ);
+      this.hideActionCard();
+      this.toggle(false);
+    }
   }
 
   toggle(forceState = null) {
     this.isOpen = (forceState !== null) ? forceState : !this.isOpen;
     if (this.isOpen) {
       this.overlay.classList.remove('map-overlay-hidden');
+      this.hideActionCard();
       this.render();
     } else {
       this.overlay.classList.add('map-overlay-hidden');
+      this.hideActionCard();
     }
   }
 
@@ -176,62 +307,99 @@ export class FullMapOverlay {
     const cy = h / 2;
     const scale = w / 1300;
 
-    // Background terrain
-    ctx.fillStyle = '#e2e8f0';
+    // 1. Satellite Base / Warm Diorama Studio Floor
+    ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, w, h);
 
-    // River
-    ctx.fillStyle = '#99f6e4';
+    // Subtle coordinate grid
+    ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= w; x += 50) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= h; y += 50) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    // 2. East River (Ulsoor / Sankey water corridor)
+    ctx.fillStyle = '#0284c7';
     ctx.fillRect(cx + 340 * scale, 0, 80 * scale, h);
 
-    // Arterial Highways
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillRect(cx - 10 * scale, 0, 20 * scale, h); // N-S Spine
-    ctx.fillRect(0, cy - 10 * scale, w, 20 * scale); // E-W Highway
+    // River water edge highlight
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cx + 340 * scale, 0, 80 * scale, h);
+
+    // 3. Arterial 4-Lane Highways (Central Spine & Ring Roads)
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(cx - 10 * scale, 0, 20 * scale, h); // N-S Central Expressway
+    ctx.fillRect(0, cy - 10 * scale, w, 20 * scale); // E-W Boulevard
 
     [-200, 200].forEach(c => {
       ctx.fillRect(cx + (c - 8) * scale, 0, 16 * scale, h);
       ctx.fillRect(0, cy + (c - 8) * scale, w, 16 * scale);
     });
 
-    // BDA Public Parks on map
-    ctx.fillStyle = '#86efac';
+    // Highway yellow centerlines
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.moveTo(cx, 0); ctx.lineTo(cx, h);
+    ctx.moveTo(0, cy); ctx.lineTo(w, cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 4. BDA Public Parks
+    ctx.fillStyle = 'rgba(34, 197, 94, 0.35)';
     ctx.fillRect(cx + (80 - 35) * scale, cy + (40 - 30) * scale, 70 * scale, 60 * scale);   // HSR Park
     ctx.fillRect(cx + (-140 - 32) * scale, cy + (60 - 27) * scale, 65 * scale, 55 * scale); // Koramangala Park
     ctx.fillRect(cx + (120 - 30) * scale, cy + (-60 - 25) * scale, 60 * scale, 50 * scale); // Indiranagar Park
 
-    // Namma Metro Elevated Viaduct Corridor (x = 24, z = -60 to 260)
-    ctx.fillStyle = '#16a34a'; // Green line
+    // 5. Namma Metro Elevated Viaduct Corridor (Green Line)
+    ctx.fillStyle = '#10b981';
     ctx.fillRect(cx + (24 - 3) * scale, cy - 60 * scale, 6 * scale, 320 * scale);
-    ctx.fillStyle = '#7e22ce'; // Purple stripe
-    ctx.fillRect(cx + (24 - 1) * scale, cy - 60 * scale, 2 * scale, 320 * scale);
 
-    // Grand Vidhana Soudha Ceremonial Boulevard (x = -200 to -240 at z = -40)
-    ctx.fillStyle = '#fbbf24';
-    ctx.fillRect(cx - 240 * scale, cy - 48 * scale, 40 * scale, 16 * scale);
-
-    // Airport Runway
+    // 6. Airport Runway
     ctx.fillStyle = '#1e293b';
-    ctx.fillRect(cx + 160 * scale, cy - 390 * scale, 280 * scale, 24 * scale);
+    ctx.fillRect(cx + 160 * scale, cy - 390 * scale, 280 * scale, 26 * scale);
+    ctx.strokeStyle = '#f8fafc';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([10, 8]);
+    ctx.beginPath();
+    ctx.moveTo(cx + 170 * scale, cy - 377 * scale);
+    ctx.lineTo(cx + 430 * scale, cy - 377 * scale);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-    // Active Player Position
+    // 7. Active Player Position & Heading
     let px = cx, py = cy;
     let playerPos = null;
+    let playerYaw = 0;
     if (this.game && this.game.player) {
       playerPos = (this.game.player.isDriving && this.game.activeVehicle)
         ? this.game.activeVehicle.position
         : this.game.player.position;
+      playerYaw = (this.game.player.isDriving && this.game.activeVehicle)
+        ? this.game.activeVehicle.yaw
+        : this.game.player.rotation;
       px = cx + playerPos.x * scale;
       py = cy + playerPos.z * scale;
     }
 
-    // Draw active GPS navigation route line from player to target
+    // 8. Active GPS Route Dash
     if (this.gpsTarget && playerPos) {
       const tx = cx + this.gpsTarget.x * scale;
       const ty = cy + this.gpsTarget.z * scale;
 
       ctx.save();
-      ctx.strokeStyle = '#06b6d4';
+      ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 3.5;
       ctx.setLineDash([8, 6]);
       ctx.beginPath();
@@ -239,101 +407,100 @@ export class FullMapOverlay {
       ctx.lineTo(tx, ty);
       ctx.stroke();
 
-      // Distance tag midway along route line
       const midX = (px + tx) / 2;
       const midY = (py + ty) / 2;
       const distM = Math.round(Math.hypot(this.gpsTarget.x - playerPos.x, this.gpsTarget.z - playerPos.z));
 
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = '#0284c7';
       ctx.beginPath();
-      ctx.roundRect(midX - 32, midY - 11, 64, 22, 6);
+      ctx.roundRect(midX - 34, midY - 11, 68, 22, 6);
       ctx.fill();
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 11px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(`${distM}m`, midX, midY + 4);
       ctx.restore();
     }
 
-    // Draw all landmark pins
+    // 9. Render Landmark Pins
     this.landmarks.forEach(lm => {
       const lx = cx + lm.x * scale;
       const ly = cy + lm.z * scale;
       const isTarget = (this.gpsTarget && this.gpsTarget.id === lm.id);
+      const isSelected = (this.selectedTarget && this.selectedTarget.id === lm.id);
 
-      // Outer beacon aura for airport & target
-      if (lm.id === 'airport' || isTarget) {
+      if (isTarget || isSelected) {
         ctx.beginPath();
-        ctx.arc(lx, ly, 18, 0, Math.PI * 2);
-        ctx.fillStyle = isTarget ? 'rgba(6, 182, 212, 0.35)' : 'rgba(37, 99, 235, 0.25)';
+        ctx.arc(lx, ly, 22, 0, Math.PI * 2);
+        ctx.fillStyle = isSelected ? 'rgba(239, 68, 68, 0.35)' : 'rgba(56, 189, 248, 0.35)';
         ctx.fill();
       }
 
       ctx.beginPath();
-      ctx.arc(lx, ly, 11, 0, Math.PI * 2);
+      ctx.arc(lx, ly, 12, 0, Math.PI * 2);
       ctx.fillStyle = lm.color;
       ctx.fill();
       ctx.lineWidth = 2.5;
       ctx.strokeStyle = '#ffffff';
       ctx.stroke();
 
-      // Icon & Name Tag
-      ctx.fillStyle = '#0f172a';
+      // Landmark Name Tag
+      ctx.fillStyle = '#f8fafc';
       ctx.font = 'bold 11px Inter, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`${lm.icon} ${lm.name.split(' ')[1] || lm.name}`, lx, ly - 15);
+      ctx.fillText(`${lm.icon} ${lm.name.split(' ')[1] || lm.name}`, lx, ly - 16);
     });
 
-    // If target is a custom pin, render custom pin marker
-    if (this.gpsTarget && this.gpsTarget.id === 'custom_pin') {
-      const tx = cx + this.gpsTarget.x * scale;
-      const ty = cy + this.gpsTarget.z * scale;
+    // 10. Selected Custom Pin Marker
+    if (this.selectedTarget && this.selectedTarget.id === 'custom_pin') {
+      const tx = cx + this.selectedTarget.x * scale;
+      const ty = cy + this.selectedTarget.z * scale;
 
       ctx.beginPath();
       ctx.arc(tx, ty, 20, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(6, 182, 212, 0.35)';
+      ctx.fillStyle = 'rgba(6, 182, 212, 0.4)';
       ctx.fill();
 
       ctx.beginPath();
-      ctx.arc(tx, ty, 12, 0, Math.PI * 2);
+      ctx.arc(tx, ty, 11, 0, Math.PI * 2);
       ctx.fillStyle = '#06b6d4';
       ctx.fill();
       ctx.lineWidth = 2.5;
       ctx.strokeStyle = '#ffffff';
       ctx.stroke();
-
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 12px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(this.gpsTarget.name, tx, ty - 16);
     }
 
-    // Current player position marker
-    if (this.game && this.game.player) {
-      const pYaw = (this.game.player.isDriving && this.game.activeVehicle)
-        ? this.game.activeVehicle.yaw
-        : this.game.player.rotation;
+    // 11. Live Player Pin with Sonar Ping
+    if (playerPos) {
+      // Outer sonar pulse
+      const now = performance.now();
+      const pulseSize = 14 + (Math.sin(now * 0.006) + 1) * 6;
+      ctx.beginPath();
+      ctx.arc(px, py, pulseSize, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
 
       ctx.save();
       ctx.translate(px, py);
-      ctx.rotate(-pYaw);
+      ctx.rotate(-playerYaw);
 
-      // Pulsing player indicator
       ctx.beginPath();
-      ctx.arc(0, 0, 8, 0, Math.PI * 2);
+      ctx.arc(0, 0, 9, 0, Math.PI * 2);
       ctx.fillStyle = '#ef4444';
       ctx.fill();
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.strokeStyle = '#ffffff';
       ctx.stroke();
 
+      // Heading arrow
       ctx.beginPath();
-      ctx.moveTo(0, -12);
+      ctx.moveTo(0, -14);
       ctx.lineTo(6, 6);
-      ctx.lineTo(0, 3);
+      ctx.lineTo(0, 2);
       ctx.lineTo(-6, 6);
       ctx.closePath();
-      ctx.fillStyle = '#dc2626';
+      ctx.fillStyle = '#f87171';
       ctx.fill();
       ctx.restore();
     }
