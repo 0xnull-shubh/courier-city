@@ -11,6 +11,19 @@ export class CrowdSystem {
       skin: [0xffdbac, 0xf1c27d, 0xe0ac69, 0xc68642, 0x8d5524]
     };
 
+    // Shared cached geometries
+    this.torsoGeo = new THREE.CylinderGeometry(0.24, 0.28, 0.72, 8);
+    this.headGeo = new THREE.SphereGeometry(0.2, 8, 8);
+    this.hairGeo = new THREE.SphereGeometry(0.21, 8, 8, 0, Math.PI * 2, 0, Math.PI / 1.7);
+    this.legGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.7, 6);
+    this.armGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.6, 6);
+
+    // Shared cached materials
+    this.shirtMats = this.palette.clothes.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }));
+    this.pantsMats = this.palette.pants.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }));
+    this.skinMats = this.palette.skin.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.6 }));
+    this.hairMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
+
     this.spawnCrowds();
   }
 
@@ -50,42 +63,37 @@ export class CrowdSystem {
     const group = new THREE.Group();
     group.position.set(x, y, z);
 
-    const shirtColor = this.palette.clothes[Math.floor(Math.random() * this.palette.clothes.length)];
-    const pantsColor = this.palette.pants[Math.floor(Math.random() * this.palette.pants.length)];
-    const skinColor = this.palette.skin[Math.floor(Math.random() * this.palette.skin.length)];
-
-    const shirtMat = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.7 });
-    const pantsMat = new THREE.MeshStandardMaterial({ color: pantsColor, roughness: 0.8 });
-    const skinMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.6 });
-    const hairMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
+    const shirtMat = this.shirtMats[Math.floor(Math.random() * this.shirtMats.length)];
+    const pantsMat = this.pantsMats[Math.floor(Math.random() * this.pantsMats.length)];
+    const skinMat = this.skinMats[Math.floor(Math.random() * this.skinMats.length)];
 
     // Torso
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.72, 8), shirtMat);
+    const torso = new THREE.Mesh(this.torsoGeo, shirtMat);
     torso.position.y = 1.05;
     torso.castShadow = true;
     group.add(torso);
 
     // Head
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), skinMat);
+    const head = new THREE.Mesh(this.headGeo, skinMat);
     head.position.y = 1.55;
     group.add(head);
 
     // Hair
-    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.21, 8, 8, 0, Math.PI * 2, 0, Math.PI / 1.7), hairMat);
+    const hair = new THREE.Mesh(this.hairGeo, this.hairMat);
     hair.position.y = 1.58;
     group.add(hair);
 
     // Legs
-    const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.7, 6), pantsMat);
+    const leftLeg = new THREE.Mesh(this.legGeo, pantsMat);
     leftLeg.position.set(-0.12, 0.35, 0);
-    const rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.7, 6), pantsMat);
+    const rightLeg = new THREE.Mesh(this.legGeo, pantsMat);
     rightLeg.position.set(0.12, 0.35, 0);
     group.add(leftLeg, rightLeg);
 
     // Arms
-    const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.6, 6), shirtMat);
+    const leftArm = new THREE.Mesh(this.armGeo, shirtMat);
     leftArm.position.set(-0.32, 1.0, 0);
-    const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.6, 6), shirtMat);
+    const rightArm = new THREE.Mesh(this.armGeo, shirtMat);
     rightArm.position.set(0.32, 1.0, 0);
     group.add(leftArm, rightArm);
 

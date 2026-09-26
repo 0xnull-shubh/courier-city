@@ -59,7 +59,26 @@ export class CityBuilder {
       statueCopper: new THREE.MeshStandardMaterial({ color: 0x6ca391, roughness: 0.55, metalness: 0.15 }),
       rock: new THREE.MeshStandardMaterial({ color: 0x9c9389, roughness: 0.92, metalness: 0.02 }),
       snow: new THREE.MeshStandardMaterial({ color: 0xfaf8f5, roughness: 0.5, metalness: 0.02 }),
-      bridgeMetal: new THREE.MeshStandardMaterial({ color: 0xd9534f, roughness: 0.6, metalness: 0.2 })
+      bridgeMetal: new THREE.MeshStandardMaterial({ color: 0xd9534f, roughness: 0.6, metalness: 0.2 }),
+      // Vegetation & Street Furniture materials (shared to eliminate draw calls and memory stalls)
+      oakTrunk: new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 }),
+      oakLeaf: new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.75 }),
+      mapleTrunk: new THREE.MeshStandardMaterial({ color: 0x4a3525, roughness: 0.9 }),
+      mapleLeaf: new THREE.MeshStandardMaterial({ color: 0xd9480f, roughness: 0.75 }),
+      mapleLeafTop: new THREE.MeshStandardMaterial({ color: 0xf08c00, roughness: 0.75 }),
+      sakuraTrunk: new THREE.MeshStandardMaterial({ color: 0x3d2b1f, roughness: 0.9 }),
+      sakuraLeaf1: new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.8 }),
+      sakuraLeaf2: new THREE.MeshStandardMaterial({ color: 0xfbcfe8, roughness: 0.8 }),
+      pineTrunk: new THREE.MeshStandardMaterial({ color: 0x422006, roughness: 0.95 }),
+      pineLeaf: new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.85 }),
+      willowTrunk: new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 }),
+      willowLeaf: new THREE.MeshStandardMaterial({ color: 0x52796f, roughness: 0.8 }),
+      palmTrunk: new THREE.MeshStandardMaterial({ color: 0x78716c, roughness: 0.85 }),
+      palmFrond: new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.7, side: THREE.DoubleSide }),
+      benchWood: new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 }),
+      benchIron: new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6, metalness: 0.7 }),
+      lampPost: new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.8 }),
+      lampGlow: new THREE.MeshBasicMaterial({ color: 0xfef08a })
     };
   }
 
@@ -3319,20 +3338,19 @@ export class CityBuilder {
 
     const trunk = new THREE.Mesh(
       new THREE.CylinderGeometry(0.35, 0.55, 4.2, 7),
-      new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 })
+      this.materials.oakTrunk
     );
     trunk.position.y = 2.1;
     trunk.castShadow = true;
     group.add(trunk);
 
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.75 });
-    const crown1 = new THREE.Mesh(new THREE.SphereGeometry(2.4, 8, 8), leafMat);
+    const crown1 = new THREE.Mesh(new THREE.SphereGeometry(2.4, 8, 8), this.materials.oakLeaf);
     crown1.position.y = 4.8;
     crown1.scale.set(1.2, 0.9, 1.2);
     crown1.castShadow = true;
     group.add(crown1);
 
-    const crown2 = new THREE.Mesh(new THREE.SphereGeometry(1.8, 7, 7), leafMat);
+    const crown2 = new THREE.Mesh(new THREE.SphereGeometry(1.8, 7, 7), this.materials.oakLeaf);
     crown2.position.set(0.6, 6.2, 0.3);
     crown2.castShadow = true;
     group.add(crown2);
@@ -3348,20 +3366,18 @@ export class CityBuilder {
 
     const trunk = new THREE.Mesh(
       new THREE.CylinderGeometry(0.3, 0.48, 4.0, 7),
-      new THREE.MeshStandardMaterial({ color: 0x4a3525, roughness: 0.9 })
+      this.materials.mapleTrunk
     );
     trunk.position.y = 2.0;
     trunk.castShadow = true;
     group.add(trunk);
 
-    // Autumn Vibrant Red & Orange Foliage
-    const mapleMat = new THREE.MeshStandardMaterial({ color: 0xd9480f, roughness: 0.75 });
-    const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(2.3, 1), mapleMat);
+    const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(2.3, 1), this.materials.mapleLeaf);
     crown.position.y = 4.6;
     crown.castShadow = true;
     group.add(crown);
 
-    const crownTop = new THREE.Mesh(new THREE.DodecahedronGeometry(1.6, 1), new THREE.MeshStandardMaterial({ color: 0xf08c00 }));
+    const crownTop = new THREE.Mesh(new THREE.DodecahedronGeometry(1.6, 1), this.materials.mapleLeafTop);
     crownTop.position.set(0.3, 6.0, -0.2);
     crownTop.castShadow = true;
     group.add(crownTop);
@@ -3377,23 +3393,20 @@ export class CityBuilder {
 
     const trunk = new THREE.Mesh(
       new THREE.CylinderGeometry(0.28, 0.42, 3.8, 7),
-      new THREE.MeshStandardMaterial({ color: 0x3d2b1f, roughness: 0.9 })
+      this.materials.sakuraTrunk
     );
     trunk.position.y = 1.9;
     trunk.rotation.z = 0.08;
     trunk.castShadow = true;
     group.add(trunk);
 
-    // Soft Pink Sakura Petals
-    const sakuraMat = new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.8 });
-    const c1 = new THREE.Mesh(new THREE.SphereGeometry(2.2, 8, 8), sakuraMat);
+    const c1 = new THREE.Mesh(new THREE.SphereGeometry(2.2, 8, 8), this.materials.sakuraLeaf1);
     c1.position.set(0, 4.4, 0);
     c1.scale.set(1.2, 0.85, 1.2);
     c1.castShadow = true;
     group.add(c1);
 
-    const sakuraLight = new THREE.MeshStandardMaterial({ color: 0xfbcfe8, roughness: 0.8 });
-    const c2 = new THREE.Mesh(new THREE.SphereGeometry(1.6, 7, 7), sakuraLight);
+    const c2 = new THREE.Mesh(new THREE.SphereGeometry(1.6, 7, 7), this.materials.sakuraLeaf2);
     c2.position.set(-0.4, 5.5, 0.4);
     c2.castShadow = true;
     group.add(c2);
@@ -3409,25 +3422,23 @@ export class CityBuilder {
 
     const trunk = new THREE.Mesh(
       new THREE.CylinderGeometry(0.28, 0.45, 5.0, 7),
-      new THREE.MeshStandardMaterial({ color: 0x422006, roughness: 0.95 })
+      this.materials.pineTrunk
     );
     trunk.position.y = 2.5;
     trunk.castShadow = true;
     group.add(trunk);
 
-    // Tiered Dark Green Cones
-    const pineMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.85 });
-    const tier1 = new THREE.Mesh(new THREE.ConeGeometry(2.4, 3.2, 7), pineMat);
+    const tier1 = new THREE.Mesh(new THREE.ConeGeometry(2.4, 3.2, 7), this.materials.pineLeaf);
     tier1.position.y = 4.2;
     tier1.castShadow = true;
     group.add(tier1);
 
-    const tier2 = new THREE.Mesh(new THREE.ConeGeometry(1.8, 2.8, 7), pineMat);
+    const tier2 = new THREE.Mesh(new THREE.ConeGeometry(1.8, 2.8, 7), this.materials.pineLeaf);
     tier2.position.y = 6.2;
     tier2.castShadow = true;
     group.add(tier2);
 
-    const tier3 = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.2, 7), pineMat);
+    const tier3 = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.2, 7), this.materials.pineLeaf);
     tier3.position.y = 7.8;
     tier3.castShadow = true;
     group.add(tier3);
@@ -3443,15 +3454,13 @@ export class CityBuilder {
 
     const trunk = new THREE.Mesh(
       new THREE.CylinderGeometry(0.4, 0.6, 4.5, 7),
-      new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 })
+      this.materials.willowTrunk
     );
     trunk.position.y = 2.25;
     trunk.castShadow = true;
     group.add(trunk);
 
-    // Drooping Weeping Willow Foliage
-    const willowMat = new THREE.MeshStandardMaterial({ color: 0x52796f, roughness: 0.8 });
-    const dome = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 1.8, 3.8, 8), willowMat);
+    const dome = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 1.8, 3.8, 8), this.materials.willowLeaf);
     dome.position.y = 4.8;
     dome.castShadow = true;
     group.add(dome);
@@ -3465,19 +3474,15 @@ export class CityBuilder {
     group.position.set(x, 0, z);
     group.scale.set(s, s, s);
 
-    // Curved Slender Trunk
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78716c, roughness: 0.85 });
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.38, 7.5, 7), trunkMat);
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.38, 7.5, 7), this.materials.palmTrunk);
     trunk.position.set(0.4, 3.75, 0);
     trunk.rotation.z = -0.12;
     trunk.castShadow = true;
     group.add(trunk);
 
-    // Tropical Palm Fronds
-    const frondMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.7, side: THREE.DoubleSide });
     for (let f = 0; f < 6; f++) {
       const angle = (f / 6) * Math.PI * 2;
-      const frond = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 3.2), frondMat);
+      const frond = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 3.2), this.materials.palmFrond);
       frond.position.set(0.8 + Math.cos(angle) * 1.5, 7.4, Math.sin(angle) * 1.5);
       frond.rotation.set(0.7, angle, 0.4);
       group.add(frond);
@@ -3491,8 +3496,8 @@ export class CityBuilder {
   // 14. STREET FURNITURE, MODERN LAMPS & GTA BILLBOARDS
   // ========================================================
   createStreetFurniture() {
-    const postMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.8 });
-    const lampGlowMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    const postMat = this.materials.lampPost;
+    const lampGlowMat = this.materials.lampGlow;
 
     // Modern Street Lamps along Major Intersections
     const lampCoords = [
@@ -3522,8 +3527,8 @@ export class CityBuilder {
     });
 
     // Park Benches in Central Boulevard Plaza
-    const benchWood = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
-    const benchIron = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6, metalness: 0.7 });
+    const benchWood = this.materials.benchWood;
+    const benchIron = this.materials.benchIron;
     for (let bz = -70; bz <= 70; bz += 28) {
       [-15, 15].forEach((bx) => {
         const bench = new THREE.Group();

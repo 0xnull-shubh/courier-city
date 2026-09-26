@@ -309,7 +309,40 @@ export class InteractiveProps {
     this.scene.add(textGroup);
   }
 
-  update(dt, vehiclePos, vehicleSpeed) {
+  update(dt, vehiclePos, vehicleSpeed, vehicleYaw) {
+    // Check vehicle collision against dynamic props for explosive Bruno Simon toy-destruction feel
+    if (vehiclePos && (vehicleSpeed === undefined || vehicleSpeed > 1.2)) {
+      const spd = Math.max(2.0, vehicleSpeed || 5.0);
+      const fwdX = Math.sin(vehicleYaw || 0);
+      const fwdZ = Math.cos(vehicleYaw || 0);
+
+      for (let i = 0; i < this.dynamicProps.length; i++) {
+        const item = this.dynamicProps[i];
+        const dx = item.body.position.x - vehiclePos.x;
+        const dz = item.body.position.z - vehiclePos.z;
+        const distSq = dx * dx + dz * dz;
+        const hitRadius = 2.1;
+
+        if (distSq < hitRadius * hitRadius) {
+          const dist = Math.max(0.1, Math.sqrt(distSq));
+          const impulseMag = Math.min(spd * 2.8, 35.0);
+          const pushX = (dx / dist) * impulseMag * 0.7 + fwdX * impulseMag * 0.7;
+          const pushZ = (dz / dist) * impulseMag * 0.7 + fwdZ * impulseMag * 0.7;
+          const pushY = impulseMag * 0.45;
+
+          item.body.applyImpulse(
+            new CANNON.Vec3(pushX, pushY, pushZ),
+            new CANNON.Vec3((Math.random() - 0.5) * 0.2, 0.3, (Math.random() - 0.5) * 0.2)
+          );
+
+          if (this.audioManager && (!item.lastSound || performance.now() - item.lastSound > 250)) {
+            this.audioManager.playImpact(Math.min(1.0, spd / 18.0));
+            item.lastSound = performance.now();
+          }
+        }
+      }
+    }
+
     // Sync Three.js meshes with Cannon-es physical bodies
     for (let i = 0; i < this.dynamicProps.length; i++) {
       const item = this.dynamicProps[i];
@@ -318,7 +351,7 @@ export class InteractiveProps {
 
       // If a prop flies off into the void or falls through the floor, reset it
       if (item.mesh.position.y < -5) {
-        item.body.position.set(item.mesh.position.x, 2, item.mesh.position.z);
+        item.body.position.set(item.mesh.position.x, 1.5, item.mesh.position.z);
         item.body.velocity.set(0, 0, 0);
         item.body.angularVelocity.set(0, 0, 0);
       }

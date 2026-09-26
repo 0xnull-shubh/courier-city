@@ -142,12 +142,12 @@ export class CameraController {
     }
   }
 
-  update(dt, targetPos, entityYaw = 0, speedKmh = 0) {
+  update(dt, targetPos, entityYaw = 0, speedKmh = 0, isDriving = false) {
     if (!targetPos || !Number.isFinite(targetPos.x)) return;
 
     // 1. View Mode yaw updates
     if (this.viewMode === 'chase') {
-      if (!this.isDragging && !this.keys.left && !this.keys.right) {
+      if (isDriving && !this.isDragging && !this.keys.left && !this.keys.right) {
         let desiredYaw = entityYaw - Math.PI;
         let diff = desiredYaw - this.yaw;
         while (diff < -Math.PI) diff += Math.PI * 2;

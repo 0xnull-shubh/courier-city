@@ -511,6 +511,11 @@ export class Vehicle {
     for (const b of obstacles) {
       if (b.isRamp) continue; // Don't block ramp entrance!
 
+      // Broadphase spatial check: skip obstacles far from vehicle
+      if (Math.abs(b.x - finalX) > b.hx + r + 1.0 || Math.abs(b.z - finalZ) > b.hz + r + 1.0) {
+        continue;
+      }
+
       // If obstacle is a flyover pillar and vehicle is elevated on a ramp or flyover deck, skip it!
       if (b.isPillar && vehicleY > 1.5) {
         continue;
