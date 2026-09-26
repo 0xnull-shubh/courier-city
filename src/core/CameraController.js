@@ -21,6 +21,9 @@ export class CameraController {
     this.distance = 16.0;
     this.targetDistance = 16.0;
     this.eyeHeight = 2.0;
+    this.baseFov = 38;
+    this.smoothingSpeed = 11;
+    this.activePreset = 'diorama';
 
     // Camera position smoothing
     this.currentPosition = new THREE.Vector3(0, 14.0, 95.0);
@@ -142,6 +145,85 @@ export class CameraController {
     }
   }
 
+  setCustomView(params = {}) {
+    if (params.distance !== undefined) {
+      this.targetDistance = Math.max(5.0, Math.min(60.0, params.distance));
+      this.distance = this.targetDistance;
+    }
+    if (params.pitch !== undefined) {
+      this.pitch = Math.max(this.minPitch, Math.min(this.maxPitch, params.pitch));
+    }
+    if (params.eyeHeight !== undefined) {
+      this.eyeHeight = Math.max(0.2, Math.min(12.0, params.eyeHeight));
+    }
+    if (params.fov !== undefined) {
+      this.baseFov = Math.max(20, Math.min(85, params.fov));
+      this.camera.fov = this.baseFov;
+      this.camera.updateProjectionMatrix();
+    }
+    if (params.smoothing !== undefined) {
+      this.smoothingSpeed = Math.max(3.0, Math.min(30.0, params.smoothing));
+    }
+    if (params.viewMode !== undefined) {
+      this.viewMode = params.viewMode;
+    }
+    if (params.preset !== undefined) {
+      this.activePreset = params.preset;
+    }
+  }
+
+  applyPreset(presetKey) {
+    const presets = {
+      diorama: { pitch: 0.82, distance: 16.0, eyeHeight: 2.0, fov: 38, viewMode: 'chase', smoothing: 11 },
+      isometric: { pitch: 0.82, distance: 20.0, eyeHeight: 2.0, fov: 38, viewMode: 'isometric', smoothing: 10 },
+      closeChase: { pitch: 0.45, distance: 10.0, eyeHeight: 1.4, fov: 48, viewMode: 'chase', smoothing: 15 },
+      topDown: { pitch: 1.45, distance: 34.0, eyeHeight: 3.0, fov: 42, viewMode: 'topDown', smoothing: 10 },
+      cockpit: { pitch: 0.32, distance: 6.2, eyeHeight: 1.2, fov: 55, viewMode: 'chase', smoothing: 18 },
+      free: { pitch: 0.82, distance: 16.0, eyeHeight: 2.0, fov: 38, viewMode: 'free', smoothing: 12 }
+    };
+    if (presets[presetKey]) {
+      this.activePreset = presetKey;
+      this.setCustomView({ ...presets[presetKey], preset: presetKey });
+      return presets[presetKey];
+    }
+    return null;
+  }
+
+  getSettings() {
+    return {
+      distance: Math.round(this.distance * 10) / 10,
+      pitch: Math.round(this.pitch * 100) / 100,
+      pitchDegrees: Math.round((this.pitch * 180) / Math.PI),
+      eyeHeight: Math.round(this.eyeHeight * 10) / 10,
+      fov: Math.round(this.baseFov),
+      smoothing: Math.round(this.smoothingSpeed),
+      viewMode: this.viewMode,
+      activePreset: this.activePreset
+    };
+  }
+
+  resetToTarget(targetPos) {
+    if (!targetPos) return;
+    const safePitch = Math.max(this.minPitch, Math.min(this.maxPitch, this.pitch));
+    const cosPitch = Math.cos(safePitch);
+    const sinPitch = Math.sin(safePitch);
+
+    const offsetX = Math.sin(this.yaw) * cosPitch * this.distance;
+    const offsetY = sinPitch * this.distance + this.eyeHeight;
+    const offsetZ = Math.cos(this.yaw) * cosPitch * this.distance;
+
+    this.currentPosition.set(
+      targetPos.x + offsetX,
+      targetPos.y + offsetY,
+      targetPos.z + offsetZ
+    );
+    this.camera.position.copy(this.currentPosition);
+
+    const lookTargetY = targetPos.y + Math.min(1.2, this.eyeHeight * 0.6);
+    this.currentLookAt.set(targetPos.x, lookTargetY, targetPos.z);
+    this.camera.lookAt(this.currentLookAt);
+  }
+
   update(dt, targetPos, entityYaw = 0, speedKmh = 0, isDriving = false) {
     if (!targetPos || !Number.isFinite(targetPos.x)) return;
 
@@ -183,9 +265,9 @@ export class CameraController {
     const zoomAlpha = 1 - Math.exp(-8 * dt);
     this.distance += (this.targetDistance - this.distance) * zoomAlpha;
 
-    // 4. Low-FOV Diorama lens (Bruno Simon style: 38 deg base, gentle speed expansion)
+    // 4. Low-FOV Diorama lens (Bruno Simon style: user customizable base, gentle speed expansion)
     const safeSpeed = (Number.isFinite(speedKmh) && speedKmh > 0) ? speedKmh : 0;
-    const baseFov = 38; // Clean diorama look without fisheye distortion
+    const baseFov = this.baseFov || 38;
     const extraFov = Math.min(safeSpeed * 0.1, 8);
     const targetFov = baseFov + extraFov;
     const fovAlpha = 1 - Math.exp(-5 * dt);
@@ -202,7 +284,7 @@ export class CameraController {
     const offsetY = sinPitch * this.distance + this.eyeHeight;
     const offsetZ = Math.cos(this.yaw) * cosPitch * this.distance;
 
-    const minCamY = targetPos.y + 2.5;
+    const minCamY = targetPos.y + 1.2;
     const desiredCamY = targetPos.y + offsetY;
 
     const desiredCamPos = new THREE.Vector3(
@@ -211,15 +293,16 @@ export class CameraController {
       targetPos.z + offsetZ
     );
 
-    // Frame-rate independent exponential smoothing (butter smooth, zero jitter)
-    const posAlpha = 1 - Math.exp(-11 * dt);
+    // Frame-rate independent exponential smoothing
+    const smoothRate = this.smoothingSpeed || 11.0;
+    const posAlpha = 1 - Math.exp(-smoothRate * dt);
     this.currentPosition.lerp(desiredCamPos, posAlpha);
     this.camera.position.copy(this.currentPosition);
 
     // Look at vehicle / character center with smooth exponential tracking
     const lookTargetY = targetPos.y + Math.min(1.2, this.eyeHeight * 0.6);
     const desiredLookAt = new THREE.Vector3(targetPos.x, lookTargetY, targetPos.z);
-    const lookAlpha = 1 - Math.exp(-14 * dt);
+    const lookAlpha = 1 - Math.exp(-(smoothRate + 3.0) * dt);
     this.currentLookAt.lerp(desiredLookAt, lookAlpha);
     this.camera.lookAt(this.currentLookAt);
   }

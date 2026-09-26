@@ -84,7 +84,7 @@ class Game {
     this.crowdSystem = new CrowdSystem(this.scene);
     this.skidSystem = new SkidMarkSystem(this.scene);
     this.interactiveProps = new InteractiveProps(this.scene, this.physicsWorld, this.audioManager);
-    this.minimap = new Minimap('radar-canvas');
+    this.minimap = new Minimap('radar-canvas', this);
     this.hud = new HUD();
     this.fullMapOverlay = new FullMapOverlay(this);
   }
@@ -255,15 +255,8 @@ class Game {
     const gpsWidget = document.getElementById('gps-nav-widget');
     if (gpsWidget) gpsWidget.addEventListener('click', () => this.fullMapOverlay.toggle());
 
-    // Toggle Camera View Button [V]
-    const viewBtn = document.getElementById('toggle-view-btn');
-    if (viewBtn) {
-      viewBtn.addEventListener('click', () => {
-        this.cameraController.toggleViewMode();
-        this.hud.updateViewMode(this.cameraController.viewMode);
-        this.hud.showToast(`Camera: ${this.cameraController.viewMode.toUpperCase()}`);
-      });
-    }
+    // Camera Customizer Modal & Controls
+    this.initCameraModal();
 
     // Day / Night Toggle
     const toggleBtn = document.getElementById('toggle-time-btn');
@@ -281,7 +274,7 @@ class Game {
 
     // Direct Click on Car, Plane, or Helicopter to Enter
     window.addEventListener('click', (e) => {
-      if (e.target.closest('.messenger-header, .messenger-actions, .bottom-hint, #radar-container, #gps-nav-widget, #full-map-overlay, #welcome-landing-modal, .welcome-modal-overlay, .welcome-card')) {
+      if (e.target.closest('.messenger-header, .messenger-actions, .bottom-hint, #radar-container, #gps-nav-widget, #full-map-overlay, #welcome-landing-modal, .welcome-modal-overlay, .welcome-card, #camera-modal, .camera-card')) {
         return;
       }
 
@@ -324,6 +317,221 @@ class Game {
         this.spawnCarNearPlayer();
       }
     });
+  }
+
+  initCameraModal() {
+    const modal = document.getElementById('camera-modal');
+    const openBtn = document.getElementById('toggle-camera-modal-btn');
+    const closeBtn = document.getElementById('close-camera-btn');
+    const doneBtn = document.getElementById('cam-done-btn');
+    const resetBtn = document.getElementById('cam-reset-btn');
+
+    const distSlider = document.getElementById('cam-dist-slider');
+    const distVal = document.getElementById('cam-dist-val');
+    const pitchSlider = document.getElementById('cam-pitch-slider');
+    const pitchVal = document.getElementById('cam-pitch-val');
+    const heightSlider = document.getElementById('cam-height-slider');
+    const heightVal = document.getElementById('cam-height-val');
+    const fovSlider = document.getElementById('cam-fov-slider');
+    const fovVal = document.getElementById('cam-fov-val');
+    const smoothSlider = document.getElementById('cam-smooth-slider');
+    const smoothVal = document.getElementById('cam-smooth-val');
+    const presetBtns = document.querySelectorAll('.cam-preset-btn');
+
+    let isOpen = false;
+
+    const syncUIFromCamera = () => {
+      if (!this.cameraController) return;
+      const settings = this.cameraController.getSettings();
+      if (distSlider && distVal) {
+        distSlider.value = settings.distance;
+        distVal.textContent = `${settings.distance}m`;
+      }
+      if (pitchSlider && pitchVal) {
+        pitchSlider.value = settings.pitchDegrees;
+        pitchVal.textContent = `${settings.pitchDegrees}°`;
+      }
+      if (heightSlider && heightVal) {
+        heightSlider.value = settings.eyeHeight;
+        heightVal.textContent = `${settings.eyeHeight}m`;
+      }
+      if (fovSlider && fovVal) {
+        fovSlider.value = settings.fov;
+        fovVal.textContent = `${settings.fov}°`;
+      }
+      if (smoothSlider && smoothVal) {
+        smoothSlider.value = settings.smoothing;
+        smoothVal.textContent = settings.smoothing > 16 ? `Ultra (${settings.smoothing})` : (settings.smoothing > 9 ? `Smooth (${settings.smoothing})` : `Snappy (${settings.smoothing})`);
+      }
+      presetBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === settings.activePreset);
+      });
+    };
+
+    const toggleCameraModal = (force = null) => {
+      if (!modal) return;
+      isOpen = (force !== null) ? force : !isOpen;
+      if (isOpen) {
+        modal.classList.remove('camera-modal-hidden');
+        syncUIFromCamera();
+      } else {
+        modal.classList.add('camera-modal-hidden');
+      }
+    };
+
+    this.toggleCameraModal = toggleCameraModal;
+
+    if (openBtn) openBtn.addEventListener('click', () => toggleCameraModal(true));
+    if (closeBtn) closeBtn.addEventListener('click', () => toggleCameraModal(false));
+    if (doneBtn) doneBtn.addEventListener('click', () => {
+      toggleCameraModal(false);
+      this.hud.showToast('Camera settings applied');
+    });
+
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        this.cameraController.applyPreset('diorama');
+        syncUIFromCamera();
+        this.hud.showToast('Camera reset to Bruno Simon default');
+      });
+    }
+
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const presetKey = btn.dataset.preset;
+        this.cameraController.applyPreset(presetKey);
+        syncUIFromCamera();
+        this.hud.showToast(`Preset: ${btn.textContent.trim()}`);
+      });
+    });
+
+    // Slider listeners
+    if (distSlider) {
+      distSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.cameraController.setCustomView({ distance: val });
+        if (distVal) distVal.textContent = `${val}m`;
+        presetBtns.forEach(b => b.classList.remove('active'));
+      });
+    }
+
+    if (pitchSlider) {
+      pitchSlider.addEventListener('input', (e) => {
+        const degrees = parseFloat(e.target.value);
+        const radians = (degrees * Math.PI) / 180;
+        this.cameraController.setCustomView({ pitch: radians });
+        if (pitchVal) pitchVal.textContent = `${degrees}°`;
+        presetBtns.forEach(b => b.classList.remove('active'));
+      });
+    }
+
+    if (heightSlider) {
+      heightSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.cameraController.setCustomView({ eyeHeight: val });
+        if (heightVal) heightVal.textContent = `${val}m`;
+        presetBtns.forEach(b => b.classList.remove('active'));
+      });
+    }
+
+    if (fovSlider) {
+      fovSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        this.cameraController.setCustomView({ fov: val });
+        if (fovVal) fovVal.textContent = `${val}°`;
+        presetBtns.forEach(b => b.classList.remove('active'));
+      });
+    }
+
+    if (smoothSlider) {
+      smoothSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        this.cameraController.setCustomView({ smoothing: val });
+        if (smoothVal) {
+          smoothVal.textContent = val > 16 ? `Ultra (${val})` : (val > 9 ? `Smooth (${val})` : `Snappy (${val})`);
+        }
+      });
+    }
+
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) toggleCameraModal(false);
+      });
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyV' && !e.target.closest('input, textarea')) {
+        toggleCameraModal();
+      }
+    });
+  }
+
+  spawnPlayerAt(worldX, worldZ) {
+    // 1. Calculate true surface elevation (supports ground terrain and elevated highway flyovers)
+    const surfaceY = (this.physicsWorld && typeof this.physicsWorld.getSurfaceHeight === 'function')
+      ? this.physicsWorld.getSurfaceHeight(worldX, worldZ)
+      : 0;
+
+    const safeLandingY = Math.max(0, surfaceY) + 1.2;
+
+    if (this.player.isDriving && this.activeVehicle) {
+      // Teleport the vehicle and player together
+      const veh = this.activeVehicle;
+      veh.position.set(worldX, safeLandingY, worldZ);
+      veh.speed = 0;
+      if (veh.velocity) veh.velocity.set(0, 0, 0);
+      if (veh.angularVelocity !== undefined) veh.angularVelocity = 0;
+      if (veh.steerAngle !== undefined) veh.steerAngle = 0;
+      if (veh.pitch !== undefined) veh.pitch = 0;
+      if (veh.roll !== undefined) veh.roll = 0;
+      if (veh.verticalVelocity !== undefined) veh.verticalVelocity = 0;
+
+      if (veh.body) {
+        veh.body.position.set(worldX, safeLandingY, worldZ);
+        veh.body.velocity.set(0, 0, 0);
+        veh.body.angularVelocity.set(0, 0, 0);
+      }
+
+      if (veh.mesh) {
+        veh.mesh.position.set(worldX, safeLandingY, worldZ);
+      }
+
+      this.player.position.set(worldX, safeLandingY, worldZ);
+      if (this.player.mesh) {
+        this.player.mesh.position.set(worldX, safeLandingY, worldZ);
+      }
+
+      const vehName = veh.carName || (veh.isBrunoToyCar ? 'Bruno Toy Roadster' : (veh.isSportsCar ? 'Supercar' : 'Vehicle'));
+      this.hud.showToast(`⚡ Landed ${vehName} at (${Math.round(worldX)}, ${Math.round(worldZ)})!`);
+    } else {
+      // Teleport character on foot
+      this.player.position.set(worldX, safeLandingY, worldZ);
+      this.player.velocity.set(0, 0, 0);
+      this.player.verticalVelocity = 0;
+      if (this.player.mesh) {
+        this.player.mesh.position.set(worldX, safeLandingY, worldZ);
+      }
+      this.hud.showToast(`⚡ Landed character at (${Math.round(worldX)}, ${Math.round(worldZ)})!`);
+    }
+
+    // 2. Instantly reset camera tracking to destination coordinates
+    const targetPos = this.player.isDriving && this.activeVehicle
+      ? this.activeVehicle.position
+      : this.player.position;
+
+    if (this.cameraController) {
+      if (typeof this.cameraController.resetToTarget === 'function') {
+        this.cameraController.resetToTarget(targetPos);
+      } else {
+        this.cameraController.camera.position.set(targetPos.x, targetPos.y + 12, targetPos.z + 16);
+        this.cameraController.camera.lookAt(targetPos);
+      }
+    }
+
+    // 3. Audio feedback
+    if (this.audioManager && typeof this.audioManager.playDoor === 'function') {
+      this.audioManager.playDoor();
+    }
   }
 
   spawnCarNearPlayer() {

@@ -1,11 +1,16 @@
 export class Minimap {
-  constructor(canvasId) {
+  constructor(canvasId, game = null) {
     this.canvas = document.getElementById(canvasId);
+    this.game = game;
     if (!this.canvas) return;
     this.ctx = this.canvas.getContext('2d');
     this.width = this.canvas.width;
     this.height = this.canvas.height;
-    this.range = 190; // Radar range (meters)
+    this.range = 190;
+
+    this.globeRotation = 0;
+    this.lastDrawTime = 0;
+    this.pulsePhase = 0;
 
     this.landmarks = [
       { name: "⚡ Founder's (Stark)", x: -70, z: 130, color: '#38bdf8', icon: '⚡' },
@@ -35,262 +40,215 @@ export class Minimap {
       { name: '🍲 Food Street', x: -40, z: 220, color: '#ef4444', icon: '🍲' },
       { name: '🏛️ Russell Mkt', x: 100, z: -140, color: '#991b1b', icon: '🏛️' }
     ];
-    this.lastDrawTime = 0;
+
+    this.initInteraction();
+  }
+
+  setGame(game) {
+    this.game = game;
+  }
+
+  initInteraction() {
+    if (!this.canvas) return;
+    this.canvas.style.cursor = 'pointer';
+
+    const triggerOpen = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (this.game && this.game.fullMapOverlay) {
+        this.game.fullMapOverlay.toggle(true);
+      }
+    };
+
+    this.canvas.addEventListener('click', triggerOpen);
+    this.canvas.addEventListener('touchend', triggerOpen);
   }
 
   update(playerPos, playerAngle, vehicles, gpsTarget = null) {
-    if (!this.ctx) return;
+    if (!this.ctx || !playerPos) return;
 
-    // Throttle Minimap 2D canvas redraw to ~25 FPS to save massive CPU/GPU fillrate
     const now = performance.now();
-    if (now - this.lastDrawTime < 40) return;
+    const dt = Math.min(0.05, (now - (this.lastDrawTime || now)) * 0.001);
+    if (now - this.lastDrawTime < 33) return; // ~30 FPS throttle
     this.lastDrawTime = now;
+
+    this.globeRotation += dt * 0.35;
+    this.pulsePhase += dt * 3.5;
 
     const ctx = this.ctx;
     const w = this.width;
     const h = this.height;
     const cx = w / 2;
     const cy = h / 2;
-    const radarRadius = w / 2 - 3;
+    const radius = w / 2 - 6;
 
     ctx.clearRect(0, 0, w, h);
 
-    // 1. Radar Circular Frame & Clip
+    // 1. Atmosphere Rim Glow (Radiant blue/cyan outer haze)
+    const atmoGlow = ctx.createRadialGradient(cx, cy, radius * 0.85, cx, cy, radius + 5);
+    atmoGlow.addColorStop(0, 'rgba(56, 189, 248, 0.45)');
+    atmoGlow.addColorStop(0.6, 'rgba(14, 165, 233, 0.2)');
+    atmoGlow.addColorStop(1, 'rgba(2, 132, 199, 0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius + 5, 0, Math.PI * 2);
+    ctx.fillStyle = atmoGlow;
+    ctx.fill();
+
+    // 2. Realistic 3D Globe Body (Radial sphere lighting)
     ctx.save();
     ctx.beginPath();
-    ctx.arc(cx, cy, radarRadius, 0, Math.PI * 2);
-    ctx.fillStyle = '#0f172a'; // Deep radar dark background
-    ctx.fill();
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = '#38bdf8';
-    ctx.stroke();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.clip();
 
-    // 2. Rotate map with player facing
+    // Deep ocean sphere gradient
+    const oceanGrad = ctx.createRadialGradient(
+      cx - radius * 0.35, cy - radius * 0.35, radius * 0.05,
+      cx, cy, radius
+    );
+    oceanGrad.addColorStop(0, '#38bdf8');     // Bright sunlight specular
+    oceanGrad.addColorStop(0.25, '#0284c7');  // Tropical blue ocean
+    oceanGrad.addColorStop(0.7, '#0f172a');   // Deep ocean navy
+    oceanGrad.addColorStop(1, '#020617');     // Twilight edge terminator
+    ctx.fillStyle = oceanGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // 3. Rotating 3D Graticule (Curved Latitude and Longitude Lines)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1;
+
+    // Latitude parallels
+    [-0.6, -0.3, 0, 0.3, 0.6].forEach(lat => {
+      const latY = cy + lat * radius * 0.9;
+      const latR = Math.sqrt(Math.max(0, radius * radius - (latY - cy) * (latY - cy)));
+      ctx.beginPath();
+      ctx.ellipse(cx, latY, latR, latR * 0.28, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+
+    // Rotating Longitude meridians
+    for (let m = 0; m < 6; m++) {
+      const lonAngle = this.globeRotation + (m / 6) * Math.PI * 2;
+      const cosLon = Math.cos(lonAngle);
+      if (cosLon > -0.1) {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, radius * Math.abs(cosLon), radius, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    // 4. Stylized Rotating Landmasses (Continents & Bengaluru terrain)
+    ctx.fillStyle = 'rgba(34, 197, 94, 0.32)';
+    for (let c = 0; c < 4; c++) {
+      const continentLon = this.globeRotation + (c / 4) * Math.PI * 2;
+      const cX = cx + Math.sin(continentLon) * radius * 0.7;
+      const cY = cy + Math.cos(continentLon * 1.5) * radius * 0.25;
+      const cVis = Math.cos(continentLon);
+
+      if (cVis > 0) {
+        ctx.beginPath();
+        ctx.ellipse(cX, cY, radius * 0.32 * cVis, radius * 0.24, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Subcontinent secondary patch
+        ctx.beginPath();
+        ctx.ellipse(cX - radius * 0.15 * cVis, cY + radius * 0.18, radius * 0.18 * cVis, radius * 0.14, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // 5. Regional City Terrain & Roads on the Globe Face
+    ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(-playerAngle);
 
-    const scale = (w / 2) / this.range;
+    const scale = (radius * 0.75) / this.range;
     const px = playerPos.x * scale;
     const pz = playerPos.z * scale;
 
-    // Ground Grid / Rings
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
-    ctx.lineWidth = 1;
-    [40 * scale, 80 * scale, 120 * scale, 160 * scale].forEach(r => {
-      ctx.beginPath();
-      ctx.arc(0, 0, r, 0, Math.PI * 2);
-      ctx.stroke();
-    });
-
-    // Arterial Highways on radar
-    ctx.fillStyle = '#334155';
-    const roadW = 16 * scale;
-    const roadLen = 1200 * scale;
-
+    // Arterial highways on local globe patch
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    const roadW = Math.max(2, 14 * scale);
+    const roadLen = 800 * scale;
     ctx.fillRect(-px - roadLen / 2, -pz - roadW / 2, roadLen, roadW);
     ctx.fillRect(-px - roadW / 2, -pz - roadLen / 2, roadW, roadLen);
 
-    [-200, 200].forEach(coord => {
-      const c = coord * scale;
-      ctx.fillRect(-px - roadLen / 2, -pz + c - roadW / 2, roadLen, roadW);
-      ctx.fillRect(-px + c - roadW / 2, -pz - roadLen / 2, roadW, roadLen);
-    });
-
-    // BDA Public Parks on radar
-    ctx.fillStyle = '#15803d';
-    ctx.fillRect(80 * scale - px - 25 * scale, 40 * scale - pz - 20 * scale, 50 * scale, 40 * scale);
-    ctx.fillRect(-140 * scale - px - 25 * scale, 60 * scale - pz - 20 * scale, 50 * scale, 40 * scale);
-
-    // Namma Metro Elevated Viaduct on radar (Green & Purple line along x = 24)
-    const metroX = 24 * scale - px;
-    ctx.fillStyle = '#16a34a';
-    ctx.fillRect(metroX - 1.5, -pz - 60 * scale, 3, 320 * scale);
-    ctx.fillStyle = '#7e22ce';
-    ctx.fillRect(metroX - 0.6, -pz - 60 * scale, 1.2, 320 * scale);
-
-    // Vidhana Soudha Grand Boulevard on radar
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(-240 * scale - px, -44 * scale - pz, 40 * scale, 10 * scale);
-
-    // River on radar
-    ctx.fillStyle = '#0284c7';
-    ctx.fillRect(380 * scale - px - (35 * scale), -pz - (600 * scale), 70 * scale, 1200 * scale);
-
-    // 3. Landmarks markers
-    this.landmarks.forEach(lm => {
+    // Nearby landmarks on globe
+    for (const lm of this.landmarks) {
       const lx = (lm.x - playerPos.x) * scale;
       const lz = (lm.z - playerPos.z) * scale;
+      const distSq = lx * lx + lz * lz;
 
-      // Only draw if within a reasonable distance
-      if (Math.hypot(lx, lz) < radarRadius + 20) {
-        ctx.save();
-        ctx.translate(lx, lz);
-        ctx.fillStyle = lm.color;
+      if (distSq < radius * radius * 0.7) {
         ctx.beginPath();
-        ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+        ctx.arc(lx, lz, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = lm.color || '#38bdf8';
         ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
-
-        ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 8px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(lm.name.split(' ')[1] || lm.name, 0, -6);
-        ctx.restore();
       }
-    });
+    }
 
-    // 4. Vehicle blips
-    vehicles.forEach(veh => {
-      const vx = (veh.position.x - playerPos.x) * scale;
-      const vz = (veh.position.z - playerPos.z) * scale;
-
-      ctx.save();
-      ctx.translate(vx, vz);
-      const hexCol = (veh.color !== undefined && veh.color !== null)
-        ? '#' + veh.color.toString(16).padStart(6, '0')
-        : (veh.isSportsCar ? '#0284c7' : (veh.isMonsterTruck ? '#dc2626' : (veh.isBmtcBus ? '#059669' : '#38bdf8')));
-      ctx.fillStyle = hexCol;
-      ctx.beginPath();
-      ctx.arc(0, 0, 3.8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.lineWidth = 1.0;
-      ctx.strokeStyle = '#ffffff';
-      ctx.stroke();
-      ctx.restore();
-    });
-
-    // 5. GPS NAVIGATION ROUTE & WAYPOINT
-    let outOfBoundsGps = null;
-
+    // GPS route line to target
     if (gpsTarget) {
       const tx = (gpsTarget.x - playerPos.x) * scale;
       const tz = (gpsTarget.z - playerPos.z) * scale;
-      const totalDist = Math.hypot(gpsTarget.x - playerPos.x, gpsTarget.z - playerPos.z);
-      const radarDist = Math.hypot(tx, tz);
-
-      // Draw Animated Glowing GPS Route Trail
-      ctx.save();
-      // Route outer neon glow
-      ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
-      ctx.lineWidth = 6;
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(tx, tz);
       ctx.stroke();
-
-      // Route animated dash line
-      ctx.strokeStyle = '#06b6d4';
-      ctx.lineWidth = 2.8;
-      ctx.setLineDash([5, 4]);
-      ctx.lineDashOffset = -(now * 0.02) % 9;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(tx, tz);
-      ctx.stroke();
-      ctx.restore();
-
-      if (radarDist <= radarRadius - 8) {
-        // Target is INSIDE the radar bounds
-        ctx.save();
-        ctx.translate(tx, tz);
-
-        // Pulsing radar ripple
-        const pulse = (Math.sin(now * 0.008) + 1) * 0.5;
-        ctx.beginPath();
-        ctx.arc(0, 0, 6 + pulse * 6, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(6, 182, 212, 0.35)';
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(0, 0, 5, 0, Math.PI * 2);
-        ctx.fillStyle = '#06b6d4';
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Target name & distance tag
-        ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 9px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${gpsTarget.icon || '📍'} ${Math.round(totalDist)}m`, 0, -9);
-        ctx.restore();
-      } else {
-        // Target is OUTSIDE the radar bounds -> save for perimeter indicator
-        const angle = Math.atan2(tz, tx);
-        outOfBoundsGps = {
-          angle,
-          dist: Math.round(totalDist),
-          name: gpsTarget.name,
-          icon: gpsTarget.icon || '📍'
-        };
-      }
+      ctx.setLineDash([]);
     }
 
-    ctx.restore(); // Restore radar rotation
-
-    // 6. Draw Out-Of-Bounds Edge Directional Chevron Pointer
-    if (outOfBoundsGps) {
-      const edgeRadius = radarRadius - 12;
-      // Note: in unrotated canvas space, outOfBoundsGps.angle needs to be offset by playerAngle
-      const screenAngle = outOfBoundsGps.angle - playerAngle;
-      const ex = cx + Math.cos(screenAngle) * edgeRadius;
-      const ey = cy + Math.sin(screenAngle) * edgeRadius;
-
-      ctx.save();
-      ctx.translate(ex, ey);
-      ctx.rotate(screenAngle);
-
-      // Glowing waypoint arrow pointing outwards to destination
-      ctx.fillStyle = '#06b6d4';
-      ctx.beginPath();
-      ctx.moveTo(8, 0);
-      ctx.lineTo(-5, -6);
-      ctx.lineTo(-2, 0);
-      ctx.lineTo(-5, 6);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-
-      // Distance badge
-      ctx.rotate(-screenAngle); // Keep text upright
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.roundRect(-24, 7, 48, 14, 4);
-      ctx.fill();
-      ctx.strokeStyle = '#06b6d4';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 8px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${outOfBoundsGps.dist}m`, 0, 17);
-
-      ctx.restore();
-    }
-
-    // 7. Central Player Arrow
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.fillStyle = '#ef4444';
+    // Live Player Direction Heading Arrow
     ctx.beginPath();
-    ctx.moveTo(0, -7);
+    ctx.moveTo(0, -9);
     ctx.lineTo(5, 5);
-    ctx.lineTo(0, 3);
+    ctx.lineTo(0, 2);
     ctx.lineTo(-5, 5);
     ctx.closePath();
+    ctx.fillStyle = '#ef4444';
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = 1.2;
     ctx.stroke();
+
     ctx.restore();
 
-    ctx.restore(); // Balance initial ctx.save() at line 59
+    // 6. Live Pulsing Beacon Wave on Player Position (Sonar Ping)
+    const waveRadius = 4 + (Math.sin(this.pulsePhase) + 1) * 8;
+    const waveAlpha = Math.max(0, 1 - (waveRadius / 20));
+    ctx.beginPath();
+    ctx.arc(cx, cy, waveRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(239, 68, 68, ${waveAlpha})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // 7. Glass Sphere Curvature Specular Highlight (Tactile 3D Lens)
+    const specGrad = ctx.createLinearGradient(cx - radius, cy - radius, cx + radius * 0.5, cy + radius * 0.5);
+    specGrad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+    specGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.1)');
+    specGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = specGrad;
+    ctx.beginPath();
+    ctx.ellipse(cx - radius * 0.25, cy - radius * 0.35, radius * 0.65, radius * 0.38, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+
+    // 8. Outer Metallic / Cyan Bezel Frame
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+    ctx.stroke();
+
+    // Compass North Marker
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('N', cx, 11);
   }
 }
